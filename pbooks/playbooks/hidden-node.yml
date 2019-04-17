@@ -304,7 +304,7 @@
             cron:
                 name: 'data_backup'
                 minute: 5
-                job: '/bin/bash /home/ubuntu/playbooks/backup.sh {{ EMAIL_SENDER }} {{BACKUP_BUCKET}}'
+                job: '/bin/bash /home/ubuntu/playbooks/pbooks/backup.sh {{ EMAIL_SENDER }} {{BACKUP_BUCKET}}'
                 state: present
             register: cron_res
 
