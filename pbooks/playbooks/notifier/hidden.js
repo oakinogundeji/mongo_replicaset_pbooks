@@ -15,7 +15,7 @@ const
  * Module config
  */
 //=============================================================================
-AWS.config.update({region: 'eu-west-1'});
+AWS.config.update({region: 'us-east-1'});
 
 const SES = new AWS.SES();
 
@@ -24,7 +24,7 @@ let mailer = nodemailer.createTransport(sesTransport({
 }));
 
 const msg = {
-    to: 'dev@percayso.com',
+    to: 'oakinogundeji@gmail.com',
     from: emailSender,
     subject: 'Replica set member status',
     text: `The replica set hidden member with hostname ${hostname} is up!`,
