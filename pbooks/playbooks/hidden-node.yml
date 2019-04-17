@@ -262,22 +262,22 @@
             register: keyfile_dir_res
 
           - name: copy shared replicaset-keyfile to /srv/mongod/
-            when: keyfile_dir_res|success
+            when: keyfile_dir_res is success
             shell: mv replicaset-keyfile /srv/mongod/replicaset-keyfile
             register: keyfile_copy_res
 
           - name: change permissions for /srv/mongod/replicaset-keyfile
-            when: keyfile_copy_res|success
+            when: keyfile_copy_res is success
             shell: chmod 400 /srv/mongod/replicaset-keyfile
             register: keyfile_chmod_res
 
           - name: chown /srv/mongod to mongod process
-            when: keyfile_chmod_res|success
+            when: keyfile_chmod_res is success
             shell: chown -R mongodb:mongodb /srv/mongod/
             register: keyfile_chown_res
 
           - name: check for existing database files on S3
-            when: keyfile_chown_res|success
+            when: keyfile_chown_res is success
             aws_s3:
                 bucket: "{{BACKUP_BUCKET}}"
                 mode: list
@@ -300,7 +300,7 @@
           - debug: var=mongod_up_res
 
           - name: create 5 min cron job for backups of /data to S3
-            when: mongod_up_res|success
+            when: mongod_up_res is success
             cron:
                 name: 'data_backup'
                 minute: 3
@@ -309,7 +309,7 @@
             register: cron_res
 
           - name: send notification email
-            when: cron_res|success
+            when: cron_res is success
             shell: node ./notifier/hidden.js {{ fqdn_res.stdout }} {{ EMAIL_SENDER }}
             register: email_res
 
