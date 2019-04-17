@@ -11,28 +11,28 @@
     - debug: var=s3_download_res
 
     - name: extract s3 tarball to /home/ubuntu
-      when: s3_download_res|success
+      when: s3_download_res is success
       shell: cd /home/ubuntu && tar xvzf /home/ubuntu/s3_obj.tar.gz
       register: untarred_res
 
     - debug: var=untarred_res
 
     - name: copy contents of untarred dir to /data
-      when: untarred_res|success
+      when: untarred_res is success
       shell: cp -r /home/ubuntu/data_backup/. /data
       register: data_copied
 
     - debug: var=data_copied
 
     - name: reset ownership of all data in /data
-      when: data_copied|success
+      when: data_copied is success
       shell: chown -R mongodb:mongodb /data
       register: ownership_rest_res
 
     - debug: var=ownership_rest_res
 
     - name: delete mongod.lock files
-      when: ownership_rest_res|success
+      when: ownership_rest_res is success
       file:
           path: "{{ item }}"
           state: absent
@@ -44,7 +44,7 @@
     - debug: var=del_lock_res
 
     - name: delete untarred dir
-      when: del_lock_res|success
+      when: del_lock_res is success
       file:
           path: /home/ubuntu/data_backup
           state: absent

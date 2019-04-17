@@ -303,7 +303,7 @@
             when: mongod_up_res|success
             cron:
                 name: 'data_backup'
-                minute: 5
+                minute: 3
                 job: '/bin/bash /home/ubuntu/playbooks/pbooks/backup.sh {{ EMAIL_SENDER }} {{BACKUP_BUCKET}}'
                 state: present
             register: cron_res
