@@ -1,7 +1,5 @@
 #!/bin/bash
 
-# create snapshot of /data dir
-#sudo lvcreate -L100M -s -n data_backup /dev/mongo_data/data
 # create snapshot of /data dir labelling it `data_backup` using all the free space on the volume
 sudo lvcreate -l 100%FREE -s -n data_backup /dev/mongo_data/data
 # create mount point for snapshot
