@@ -286,7 +286,7 @@
           - debug: var=s3_list_res
 
           - include_tasks: restore.yml
-            when: s3_list_res.s3_keys[0].exists
+            when: s3_list_res.s3_keys[0] == mongo_data.tar.gz
             ignore_errors: True
 
           - name: restart mongod daemon
