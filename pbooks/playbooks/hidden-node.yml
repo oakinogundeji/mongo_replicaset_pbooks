@@ -299,11 +299,11 @@
 
           - debug: var=mongod_up_res
 
-          - name: create 5 min cron job for backups of /data to S3
+          - name: create 10 min cron job for backups of /data to S3
             when: mongod_up_res is success
             cron:
                 name: 'data_backup'
-                minute: 3
+                minute: 10
                 job: '/bin/bash /home/ubuntu/playbooks/pbooks/backup.sh {{ EMAIL_SENDER }} {{BACKUP_BUCKET}}'
                 state: present
             register: cron_res
