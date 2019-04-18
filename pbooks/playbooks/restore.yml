@@ -1,6 +1,6 @@
 ---
     - name: download existing database files
-      when: s3_list_res.s3_keys[0]
+      when: s3_list_res.s3_keys[0] == "mongo_data.tar.gz"
       aws_s3:
           bucket: "{{BACKUP_BUCKET}}"
           object: "{{ s3_list_res.s3_keys[0] }}"
