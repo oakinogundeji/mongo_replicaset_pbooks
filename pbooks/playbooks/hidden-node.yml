@@ -316,6 +316,8 @@
               create: yes
             register: cron_res
 
+          - debug: var=cron_res
+
           - name: send notification email
             when: cron_res is success
             shell: node ./notifier/hidden.js {{ fqdn_res.stdout }} {{ EMAIL_SENDER }}
