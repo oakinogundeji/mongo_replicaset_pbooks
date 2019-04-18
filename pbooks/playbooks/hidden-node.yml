@@ -29,7 +29,7 @@
           - debug: var=vgcreate_res
 
           - name: create LVM "data" LVM logical volume
-            when: vgcreate_res|success
+            when: vgcreate_res is success
             shell: lvcreate -l 90%vg -n data mongo_data
             register: data_logvol_res
 

@@ -1,7 +1,9 @@
 #!/bin/bash
 
 # create snapshot of /data dir
-sudo lvcreate -L100M -s -n data_backup /dev/mongo_data/data
+#sudo lvcreate -L100M -s -n data_backup /dev/mongo_data/data
+# create snapshot of /data dir labelling it `data_backup` using all the free space on the volume
+sudo lvcreate -l 100%FREE -s -n data_backup /dev/mongo_data/data
 # create mount point for snapshot
 sudo mkdir /data_backup /home/ubuntu/backup
 # mount snapshot
@@ -14,6 +16,8 @@ sudo umount /data_backup
 sudo rm -r /data_backup
 # delete the snapshot
 sudo lvremove -f /dev/mongo_data/data_backup
+# delete previous backup
+aws s3 rm s3://${2}/mongo_data.tar.gz
 # copy tar archive from /home/ubuntu/backup/mongo_data to S3 bucket
 aws s3 cp /home/ubuntu/backup/mongo_data.tar.gz s3://${2}/mongo_data.tar.gz --storage-class 'STANDARD_IA'
 # remove the /home/ubuntu/backup directory
