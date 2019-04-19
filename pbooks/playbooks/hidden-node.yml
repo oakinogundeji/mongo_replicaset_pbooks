@@ -299,14 +299,14 @@
 
           - debug: var=mongod_up_res
 
-          #- name: create 10 min cron job for backups of /data to S3
-            #when: mongod_up_res is success
-            #cron:
-            #    name: 'data_backup'
-            #    minute: 10
-            #    job: '/bin/bash /home/ubuntu/playbooks/pbooks/backup.sh {{ EMAIL_SENDER }} {{BACKUP_BUCKET}}'
-            #    state: present
-          #  register: cron_res
+          - name: create 10 min cron job for backups of /data to S3
+            when: mongod_up_res is success
+            cron:
+                name: 'data_backup'
+                minute: */10
+                job: '/bin/bash /home/ubuntu/playbooks/pbooks/backup.sh {{ EMAIL_SENDER }} {{BACKUP_BUCKET}}'
+                state: present
+            register: cron_res
 
           #- name: create 10 min cron job for backups of /data to S3
           #  when: mongod_up_res is success
@@ -316,15 +316,15 @@
           #    create: yes
           #  register: cron_res is success
 
-          - name: create 10 min cron job for backups of /data to S3
-            when: mongod_up_res is success
-            shell: (crontab -l ; echo "*/10 * * * * ubuntu /home/ubuntu/playbooks/pbooks/backup.sh {{ EMAIL_SENDER }} {{BACKUP_BUCKET}}") | crontab -
-            register: cron_res is success
+          #- name: create 10 min cron job for backups of /data to S3
+          #  when: mongod_up_res is success
+          #  shell: (crontab -l ; echo "*/10 * * * * ubuntu /home/ubuntu/playbooks/pbooks/backup.sh {{ EMAIL_SENDER }} {{BACKUP_BUCKET}}") | crontab -
+          #  register: cron_res is success
 
           - debug: var=cron_res
 
           - name: restart cron daemon
-            when: mongod_up_res is success
+            when: cron_res is success
             service:
               name: cron
               state: restarted
