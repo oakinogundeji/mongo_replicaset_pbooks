@@ -308,19 +308,6 @@
                 state: present
             register: cron_res
 
-          #- name: create 10 min cron job for backups of /data to S3
-          #  when: mongod_up_res is success
-          #  lineinfile:
-          #    dest: /etc/crontab
-          #    line: "*/10 * * * * ubuntu /home/ubuntu/playbooks/pbooks/backup.sh {{ EMAIL_SENDER }} {{BACKUP_BUCKET}}"
-          #    create: yes
-          #  register: cron_res is success
-
-          #- name: create 10 min cron job for backups of /data to S3
-          #  when: mongod_up_res is success
-          #  shell: (crontab -l ; echo "*/10 * * * * ubuntu /home/ubuntu/playbooks/pbooks/backup.sh {{ EMAIL_SENDER }} {{BACKUP_BUCKET}}") | crontab -
-          #  register: cron_res is success
-
           - debug: var=cron_res
 
           - name: restart cron daemon
