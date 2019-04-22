@@ -153,12 +153,26 @@
 
           - debug: var=chown_mongodb_res
 
-          - name: add private IP address to mongod-repl.conf
-            when: chown_mongodb_res is success
+          - name: get instance ID of this EC2 instance
+            shell: curl http://169.254.169.254/latest/meta-data/instance-id
+            register: instance_id_res
+
+          - debug: var=instance_id_res
+
+          - name: get facts about ENI attached to this EC2 instance
+            ec2_eni_facts:
+              region: ca-central-1
+              filters:
+                attachment.instance-id: "{{ instance_id_res.stdout_lines[0] }}"
+            register: eni_res
+
+          - debug: var=eni_res
+
+          - name: add ENI private IP address to mongod-repl.conf
             lineinfile:
                 dest: ./mongod-repl.conf
                 regexp: '^\s{1,}bindIp'
-                line: '  bindIp: 127.0.0.1,{{ansible_eth0.ipv4.address}}'
+                line: '  bindIp: 127.0.0.1,{{ eni_res.network_interfaces[1].private_ip_address }}'
                 state: present
             register: priv_ip_res
 
@@ -187,21 +201,12 @@
                 * hard nproc 32000
             register: nproc_conf_res
 
-          #- debug: var=nproc_conf_res
-
-          - name: get hostname
-            #when: nproc_conf_res is success
-            shell: hostname
-            register: hostname_res
-
-          - debug: var=hostname_res
-
           - name: update "/etc/hosts"
             when: hostname_res is success
             lineinfile:
                 dest: /etc/hosts
                 regexp: '^127.0.0.1'
-                line: '127.0.0.1 localhost {{ hostname_res.stdout }}'
+                line: '127.0.0.1 localhost {{ eni_res.network_interfaces[1].private_dns_name }}'
                 state: present
             register: update_hosts_res
 
