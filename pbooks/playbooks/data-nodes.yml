@@ -306,7 +306,7 @@
 
           - name: send notification email
             when: mongod_up_res is success
-            shell: node ./notifier/data.js {{ fqdn_res.stdout }} {{ EMAIL_SENDER }}
+            shell: node ./notifier/data.js {{ fqdn_res.stdout }} {{ eni_res.network_interfaces[1].private_dns_name }} {{ EMAIL_SENDER }} {{ eni_res.network_interfaces[1].private_ip_address }}
             register: email_res
 
           - debug: var=email_res

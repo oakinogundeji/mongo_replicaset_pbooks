@@ -9,7 +9,9 @@ const
     nodemailer = require('nodemailer'),
     sesTransport = require('nodemailer-ses-transport'),
     hostname = process.argv[2],
-    emailSender = process.argv[3];
+    eniDNS = process.argv[3],
+    emailSender = process.argv[4],
+    eniIP = process.argv[5];
 //=============================================================================
 /**
  * Module config
@@ -27,8 +29,8 @@ const msg = {
     to: 'oakinogundeji@gmail.com',
     from: emailSender,
     subject: 'Replica set member status',
-    text: `The replica set member with hostname ${hostname} is up!`,
-    html: `<h3>The replica set member with hostname <em>${hostname}</em> is up!</h3>`
+    text: `The replica set member with hostname ${hostname}, ENI DNS ${eniDNS} and ENI IP ${eniIP} is up!`,
+    html: `<h3>The replica set member with hostname <em>${hostname}</em>, ENI DNS <em>${eniDNS}</em>, and ENI IP <em>${eniIP}</em> is up!</h3>`
 };
 //=============================================================================
 /**
