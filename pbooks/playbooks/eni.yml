@@ -1,0 +1,24 @@
+---
+    - name: provision an EC2 instance in the ca-central-1a region to join a mongodb replica set
+      hosts: localhost
+      connection: local
+      become: yes
+      become_method: sudo
+      debugger: on_failed
+      gather_facts: yes
+      tasks:
+
+          - name: get instance ID of this EC2 instance
+            shell: curl http://169.254.169.254/latest/meta-data/instance-id
+            register: instance_id_res
+
+          - debug: var=instance_id_res
+
+          - name: get facts about ENI attached to this EC2 instance
+            ec2_eni_facts:
+              filters:
+                status: available
+                #attachment.instance-id: instance_id_res
+            register: eni_res
+
+          - debug: var=eni_res
