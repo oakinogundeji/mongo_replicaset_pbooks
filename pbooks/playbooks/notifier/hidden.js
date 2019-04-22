@@ -9,7 +9,9 @@ const
     nodemailer = require('nodemailer'),
     sesTransport = require('nodemailer-ses-transport'),
     hostname = process.argv[2],
-    emailSender = process.argv[3];
+    eniDNS = process.argv[3],
+    emailSender = process.argv[4],
+    eniIP = process.argv[5];
 //=============================================================================
 /**
  * Module config
