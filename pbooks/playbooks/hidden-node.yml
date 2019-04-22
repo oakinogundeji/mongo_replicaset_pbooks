@@ -202,7 +202,6 @@
             register: nproc_conf_res
 
           - name: update "/etc/hosts"
-            when: hostname_res is success
             lineinfile:
                 dest: /etc/hosts
                 regexp: '^127.0.0.1'
