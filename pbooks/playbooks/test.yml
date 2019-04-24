@@ -25,6 +25,7 @@
               region: ca-central-1
               filters:
                 attachment.instance-id: "{{ instance_id_res.stdout_lines[0] }}"
+                attachment.device-index: '1'
             register: eni_res
 
           - debug: var=eni_res

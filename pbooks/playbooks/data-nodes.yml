@@ -170,21 +170,16 @@
               region: ca-central-1
               filters:
                 attachment.instance-id: "{{ instance_id_res.stdout_lines[0] }}"
+                attachment.device-index: '1'
             register: eni_res
 
           - debug: var=eni_res
-
-          - name: get attached ENI details
-            shell: node ./get-eni.js {{eni_res.network_interfaces}}
-            register: attached_eni_res
-
-          - debug: var=attached_eni_res
 
           - name: add ENI private IP address to mongod-repl.conf
             lineinfile:
                 dest: ./mongod-repl.conf
                 regexp: '^\s{1,}bindIp'
-                line: '  bindIp: {{ attached_eni_res[0].private_dns_name }}'
+                line: '  bindIp: {{ eni_res.network_interfaces[0].private_dns_name }}'
                 state: present
             register: priv_ip_res
 
@@ -200,18 +195,18 @@
                   ethernets:
                     eth1:
                       addresses:
-                       - {{ attached_eni_res[0].private_ip_address }}/20
+                       - {{ eni_res.network_interfaces[0].private_ip_address }}/20
                       dhcp4: no
                       routes:
                        - to: 0.0.0.0/0
                          via: {{ ipgateway_res.stdout_lines[0] }}
                          table: 1000
-                       - to: {{ attached_eni_res[0].private_ip_address }}
+                       - to: {{ eni_res.network_interfaces[0].private_ip_address }}
                          via: 0.0.0.0
                          scope: link
                          table: 1000
                       routing-policy:
-                        - from: {{ attached_eni_res[0].private_ip_address }}
+                        - from: {{ eni_res.network_interfaces[0].private_ip_address }}
                           table: 1000
             register: netplan_conf_res
 
@@ -244,7 +239,7 @@
             lineinfile:
                 dest: /etc/hosts
                 regexp: '^127.0.0.1'
-                line: '127.0.0.1 localhost {{ attached_eni_res[0].private_dns_name }}'
+                line: '127.0.0.1 localhost {{ eni_res.network_interfaces[0].private_dns_name }}'
                 state: present
             register: update_hosts_res
 
@@ -356,7 +351,7 @@
 
           - name: send notification email
             when: mongod_up_res is success
-            shell: node ./notifier/data.js {{ fqdn_res.stdout }} {{ attached_eni_res[0].private_dns_name }} {{ EMAIL_SENDER }} {{ attached_eni_res[0].private_ip_address }}
+            shell: node ./notifier/data.js {{ fqdn_res.stdout }} {{ eni_res.network_interfaces[0].private_dns_name }} {{ EMAIL_SENDER }} {{ eni_res.network_interfaces[0].private_ip_address }}
             register: email_res
 
           - debug: var=email_res
