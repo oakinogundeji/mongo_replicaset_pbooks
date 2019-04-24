@@ -2,7 +2,7 @@
 
 const input = process.argv[2];
 
-async function getEni() {
+async function getEni(input) {
   const eni = input.filter(eni => eni["description"].includes('node'));
   const output = eni.map(eni => {
     return {
@@ -18,4 +18,4 @@ async function getEni() {
   return console.log(output);
 }
 
-getEni()
+getEni(input);
