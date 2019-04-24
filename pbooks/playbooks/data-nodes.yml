@@ -194,18 +194,18 @@
                   ethernets:
                     eth1:
                       addresses:
-                       - {{ eni_res.network_interfaces[1].private_ip_address }}/24
+                       - {{ eni_res.network_interfaces[1].private_ip_address }}/20
                       dhcp4: no
                       routes:
                        - to: 0.0.0.0/0
                          via: {{ ipgateway_res.stdout_lines[0] }}
                          table: 1000
-                       - to: {{ eni_res.network_interfaces[1].private_ip_address }}/24
+                       - to: {{ eni_res.network_interfaces[1].private_ip_address }}
                          via: 0.0.0.0
                          scope: link
                          table: 1000
                       routing-policy:
-                        - from: {{ eni_res.network_interfaces[1].private_ip_address }}/24
+                        - from: {{ eni_res.network_interfaces[1].private_ip_address }}
                           table: 1000
             register: netplan_conf_res
 
