@@ -153,6 +153,12 @@
 
           - debug: var=chown_mongodb_res
 
+          - name: run ipgateway stuff
+            shell: node ./eni-netplan.js
+            register: ipgateway_res
+
+          - debug: var=ipgateway_res
+
           - name: get instance ID of this EC2 instance
             shell: curl http://169.254.169.254/latest/meta-data/instance-id
             register: instance_id_res
@@ -177,6 +183,46 @@
             register: priv_ip_res
 
           - debug: var=priv_ip_res
+
+          - name: modify eni netplan config file ip addresses line
+            lineinfile:
+              dest: ./eni-netplan-config.yaml
+              regexp: '- 172.31.24.153/20'
+              line: '- {{ eni_res.network_interfaces[1].private_ip_address}}/24'
+              state: present
+            register: ip_addresses_line
+
+          - debug: var=ip_addresses_line
+
+          - name: modify eni netplan config file default gateway line
+            lineinfile:
+              dest: ./eni-netplan-config.yaml
+              regexp: 'via: 172.31.16.1'
+              line: 'via: {{ ipgateway_res.stdout_lines[0] }}'
+              state: present
+            register: default_gateway_line
+
+          - debug: var=default_gateway_line
+
+          - name: modify eni netplan config file to ENI line
+            lineinfile:
+              dest: ./eni-netplan-config.yaml
+              regexp: '- to: 172.31.24.153'
+              line: '- to: {{ eni_res.network_interfaces[1].private_ip_address}}/24'
+              state: present
+            register: to_eni_line
+
+          - debug: var=to_eni_line
+
+          - name: modify eni netplan config file from ENI line
+            lineinfile:
+              dest: ./eni-netplan-config.yaml
+              regexp: '- from: 172.31.24.153'
+              line: '- from: {{ eni_res.network_interfaces[1].private_ip_address}}/24'
+              state: present
+            register: from_eni_line
+
+          - debug: var=from_eni_line
 
           - name: edit limits.conf file
             when: priv_ip_res is success
@@ -233,6 +279,18 @@
             register: new_conf_res
 
           - debug: var=new_conf_res
+
+          - name: copy eni netplan config to /etc/netplan dir
+            shell: mv ./eni-netplan-config.yaml /etc/netplan/./eni-netplan-config.yaml
+            register: eni_netplan_res
+
+          - debug: var=eni_netplan_res
+
+          - name: apply new netplan
+            shell: 'netplan --debug apply'
+            register: netplan_res
+
+          - debug: var=netplan_res
 
           - name: get ansible_fqdn value
             when: new_conf_res is success
