@@ -1,8 +1,18 @@
 'use strict';
 
-const input = process.argv[2];
 
-async function getEni(input) {
+
+//const inputJSON = JSON.parse(input);
+
+async function getEni() {
+  const input = process.argv[2];
+
+  console.log(input);
+  console.log(`typeof(input): ${typeof(input)}`);
+  let inputJSON = JSON.parse(input);
+  console.log(`typeof(inputJSON): ${typeof(inputJSON)}`);
+  /*
+
   const eni = input.filter(eni => eni["description"].includes('node'));
   const output = eni.map(eni => {
     return {
@@ -16,6 +26,7 @@ async function getEni(input) {
     }
   });
   return console.log(output);
+  */
 }
 
-getEni(input);
+getEni();
