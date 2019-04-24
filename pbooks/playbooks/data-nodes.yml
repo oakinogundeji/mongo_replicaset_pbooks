@@ -194,8 +194,11 @@
                   renderer: networkd
                   ethernets:
                     eth1:
+                      match:
+                        macaddress: {{ eni_res.network_interfaces[0].mac_address }}
                       addresses:
                        - {{ eni_res.network_interfaces[0].private_ip_address }}/20
+                      set-name: eth1
                       dhcp4: no
                       routes:
                        - to: 0.0.0.0/0
