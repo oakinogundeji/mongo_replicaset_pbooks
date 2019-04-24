@@ -184,45 +184,32 @@
 
           - debug: var=priv_ip_res
 
-          - name: modify eni netplan config file ip addresses line
-            lineinfile:
-              dest: ./eni-netplan-config.yaml
-              regexp: '- 172.31.24.153/20'
-              line: '- {{ eni_res.network_interfaces[1].private_ip_address}}/24'
-              state: present
-            register: ip_addresses_line
+          - name: edit eni netplan config file
+            blockinfile:
+              path: ./eni-netplan-config.yaml
+              block: |
+                network:
+                  version: 2
+                  renderer: networkd
+                  ethernets:
+                    eth1:
+                      addresses:
+                       - {{ eni_res.network_interfaces[1].private_ip_address }}/24
+                      dhcp4: no
+                      routes:
+                       - to: 0.0.0.0/0
+                         via: {{ ipgateway_res.stdout_lines[0] }}
+                         table: 1000
+                       - to: {{ eni_res.network_interfaces[1].private_ip_address }}/24
+                         via: 0.0.0.0
+                         scope: link
+                         table: 1000
+                      routing-policy:
+                        - from: {{ eni_res.network_interfaces[1].private_ip_address }}/24
+                          table: 1000
+            register: netplan_conf_res
 
-          - debug: var=ip_addresses_line
-
-          - name: modify eni netplan config file default gateway line
-            lineinfile:
-              dest: ./eni-netplan-config.yaml
-              regexp: 'via: 172.31.16.1'
-              line: 'via: {{ ipgateway_res.stdout_lines[0] }}'
-              state: present
-            register: default_gateway_line
-
-          - debug: var=default_gateway_line
-
-          - name: modify eni netplan config file to ENI line
-            lineinfile:
-              dest: ./eni-netplan-config.yaml
-              regexp: '- to: 172.31.24.153'
-              line: '- to: {{ eni_res.network_interfaces[1].private_ip_address}}/24'
-              state: present
-            register: to_eni_line
-
-          - debug: var=to_eni_line
-
-          - name: modify eni netplan config file from ENI line
-            lineinfile:
-              dest: ./eni-netplan-config.yaml
-              regexp: '- from: 172.31.24.153'
-              line: '- from: {{ eni_res.network_interfaces[1].private_ip_address}}/24'
-              state: present
-            register: from_eni_line
-
-          - debug: var=from_eni_line
+          - debug: var=netplan_conf_res
 
           - name: edit limits.conf file
             when: priv_ip_res is success
@@ -281,7 +268,7 @@
           - debug: var=new_conf_res
 
           - name: copy eni netplan config to /etc/netplan dir
-            shell: mv ./eni-netplan-config.yaml /etc/netplan/./eni-netplan-config.yaml
+            shell: mv ./eni-netplan-config.yaml /etc/netplan/eni-netplan-config.yaml
             register: eni_netplan_res
 
           - debug: var=eni_netplan_res
