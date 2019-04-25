@@ -310,6 +310,13 @@
 
           - debug: var=mongod_up_res
 
+          - name: send notification email
+            when: mongod_up_res is success
+            shell: node ./notifier/data.js {{ fqdn_res.stdout }} {{ eni_res.network_interfaces[0].private_dns_name }} {{ EMAIL_SENDER }} {{ eni_res.network_interfaces[0].private_ip_address }} {{ eni_res.network_interfaces[0].association.public_ip }}
+            register: email_res
+
+          - debug: var=email_res
+
           - name: edit eni netplan config file
             blockinfile:
               path: ./eni-netplan-config.yaml
@@ -351,13 +358,6 @@
             register: netplan_res
 
           - debug: var=netplan_res
-
-          - name: send notification email
-            when: mongod_up_res is success
-            shell: node ./notifier/data.js {{ fqdn_res.stdout }} {{ eni_res.network_interfaces[0].private_dns_name }} {{ EMAIL_SENDER }} {{ eni_res.network_interfaces[0].private_ip_address }} {{ eni_res.network_interfaces[0].association.public_ip }}
-            register: email_res
-
-          - debug: var=email_res
 
           - name: shut down eth0
             shell: ip link eth0 down
