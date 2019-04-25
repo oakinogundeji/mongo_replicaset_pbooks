@@ -247,10 +247,7 @@
             ignore_errors: True
 
           - name: restart mongod daemon
-            service:
-              name: mongod
-              state: started
-              enabled: yes
+            shell: service mongod restart
             register: mongod_up_res
 
           - debug: var=mongod_up_res
