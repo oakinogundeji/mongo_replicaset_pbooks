@@ -1,0 +1,26 @@
+{
+  "name": "eni_lambda",
+  "version": "1.0.0",
+  "description": "lamda function which attaches the right ENI to an EC2 instance spawned by AS",
+  "main": "eni.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/oakinogundeji/eni_lambda.git"
+  },
+  "author": "TSS",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/oakinogundeji/eni_lambda/issues"
+  },
+  "homepage": "https://github.com/oakinogundeji/eni_lambda#readme",
+  "dependencies": {
+    "aws-sdk": "^2.440.0",
+    "bluebird": "^3.5.4"
+  },
+  "devDependencies": {
+    "serverless-offline": "^4.9.4"
+  }
+}
