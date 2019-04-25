@@ -246,14 +246,7 @@
             when: s3_list_res.s3_keys[0] == "mongo_data.tar.gz"
             ignore_errors: True
 
-          - name: restart mongod daemon
-            shell: service mongod restart
-            register: mongod_up_res
-
-          - debug: var=mongod_up_res
-
           - name: send notification email
-            when: mongod_up_res is success
             shell: node ./notifier/data.js {{ fqdn_res.stdout }} {{ EMAIL_SENDER }}
             register: email_res
 
