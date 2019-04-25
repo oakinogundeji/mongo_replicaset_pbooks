@@ -186,17 +186,8 @@
 
           - debug: var=update_hosts_res
 
-          - name: turn off core dumps
-            when: update_hosts_res is success
-            lineinfile:
-              dest: /etc/default/apport
-              regexp: '^enabled=1'
-              line: 'enabled=0'
-              state: present
-            register: core_dumps_off
-
           - name: backup existing mongod.conf
-            when: core_dumps_off is success
+            when: update_hosts_res is success
             shell: mv /etc/mongod.conf /etc/mongod.conf.old
             register: conf_backup_res
 
@@ -216,24 +207,8 @@
 
           - debug: var=fqdn_res
 
-          - name: copy hugepages fix to /etc/systemd/system/mongod-hugepage-fix.service
-            when: fqdn_res is success
-            shell: mv hugepages-fix /etc/systemd/system/mongod-hugepage-fix.service
-            register: hugepages_res
-
-          - debug: var=hugepages_res
-
-          - name: enable hugepages fix
-            when: hugepages_res is success
-            shell: "{{item}}"
-            with_items:
-                - systemctl daemon-reload
-                - systemctl enable mongod-hugepage-fix
-                - systemctl start mongod-hugepage-fix
-            register: hupages_activated_res
-
           - name: create the /srv/mongod dir
-            when: hupages_activated_res is success
+            when: fqdn_res is success
             file:
               path: /srv/mongod
               state: directory
@@ -252,7 +227,7 @@
 
           - name: chown /srv/mongod to mongod process
             when: keyfile_chmod_res is success
-            shell: chown -R mongodb:mongodb /srv/mongod/
+            shell: chown -R mongod:mongod /srv/mongod/
             register: keyfile_chown_res
 
           - name: check for existing database files on S3
