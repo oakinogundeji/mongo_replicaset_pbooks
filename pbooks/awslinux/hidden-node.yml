@@ -153,12 +153,6 @@
 
           - debug: var=chown_mongodb_res
 
-          - name: run ipgateway stuff
-            shell: node ./get-gateway.js
-            register: ipgateway_res
-
-          - debug: var=ipgateway_res
-
           - name: get instance ID of this EC2 instance
             shell: curl http://169.254.169.254/latest/meta-data/instance-id
             register: instance_id_res
@@ -170,7 +164,6 @@
               region: ca-central-1
               filters:
                 attachment.instance-id: "{{ instance_id_res.stdout_lines[0] }}"
-                attachment.device-index: '1'
             register: eni_res
 
           - debug: var=eni_res
@@ -179,7 +172,7 @@
             lineinfile:
                 dest: ./mongod-repl.conf
                 regexp: '^\s{1,}bindIp'
-                line: '  bindIp: {{ eni_res.network_interfaces[0].private_dns_name }}'
+                line: '  bindIp: {{ eni_res.network_interfaces[1].private_dns_name }}'
                 state: present
             register: priv_ip_res
 
@@ -212,7 +205,7 @@
             lineinfile:
                 dest: /etc/hosts
                 regexp: '^127.0.0.1'
-                line: '127.0.0.1 localhost {{ eni_res.network_interfaces[0].private_dns_name }}'
+                line: '127.0.0.1 localhost {{ eni_res.network_interfaces[1].private_dns_name }}'
                 state: present
             register: update_hosts_res
 
@@ -310,55 +303,30 @@
 
           - debug: var=mongod_up_res
 
-          - name: send notification email
+          - name: create 10 min cron job for backups of /data to S3
             when: mongod_up_res is success
-            shell: node ./notifier/data.js {{ fqdn_res.stdout }} {{ eni_res.network_interfaces[0].private_dns_name }} {{ EMAIL_SENDER }} {{ eni_res.network_interfaces[0].private_ip_address }} {{ eni_res.network_interfaces[0].association.public_ip }}
+            cron:
+                name: 'data_backup'
+                minute: '*/10'
+                job: '/bin/bash /home/ubuntu/playbooks/pbooks/backup.sh {{ EMAIL_SENDER }} {{BACKUP_BUCKET}}'
+                state: present
+            register: cron_res
+
+          - debug: var=cron_res
+
+          - name: restart cron daemon
+            when: cron_res is success
+            service:
+              name: cron
+              state: restarted
+              enabled: yes
+            register: crontab_res
+
+          - debug: var=crontab_res
+
+          - name: send notification email
+            when: crontab_res is success
+            shell: node ./notifier/hidden.js {{ fqdn_res.stdout }} {{ eni_res.network_interfaces[1].private_dns_name }} {{ EMAIL_SENDER }} {{ eni_res.network_interfaces[1].private_ip_address }}
             register: email_res
 
           - debug: var=email_res
-
-          - name: edit eni netplan config file
-            blockinfile:
-              path: ./eni-netplan-config.yaml
-              block: |
-                network:
-                  version: 2
-                  renderer: networkd
-                  ethernets:
-                    eth1:
-                      dhcp4: false
-                      match:
-                        macaddress: {{ eni_res.network_interfaces[0].mac_address }}
-                      set-name: eth1
-            register: netplan_conf_res
-
-          - debug: var=netplan_conf_res
-
-          - name: Delete the cloud-init config file
-            file:
-              path: /etc/netplan/50-cloud-init.yaml
-              state: absent
-            register: cloud_init_deleted
-
-          - debug: var=cloud_init_deleted
-
-          - name: disable cloud init auto config
-            shell: mv ./99-disable-network-config.cfg /etc/cloud/cloud.cfg.d/99-disable-network-config.cfg
-            register: disabled_cloud_init
-
-          - debug: var=disabled_cloud_init
-
-          - name: copy eni netplan config to /etc/netplan dir
-            shell: mv ./eni-netplan-config.yaml /etc/netplan/eni-netplan-config.yaml
-            register: eni_netplan_res
-
-          - debug: var=eni_netplan_res
-
-          - name: apply new netplan
-            shell: 'netplan --debug apply'
-            register: netplan_res
-
-          - debug: var=netplan_res
-
-          - name: shut down eth0
-            shell: ip link set eth0 down

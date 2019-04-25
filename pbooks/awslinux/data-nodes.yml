@@ -105,33 +105,17 @@
 
           - debug: var=journal_link_res
 
-          - name: import mongodb GPG key
-            when: journal_link_res is success
-            apt_key:
-              keyserver: hkp://keyserver.ubuntu.com:80
-              id: 9DA31620334BD75D9DCB49F368818C72E52529D4
-              state: present
-            register: mongo_gpg_res
+          - name: move ./mongodb-org-4.0.repo to /etc/yum.repos.d/mongodb-org-4.0.repo file
+            shell: mv ./mongodb-org-4.0.repo /etc/yum.repos.d/mongodb-org-4.0.repo
+            register: repo_file_moved
 
-          - debug: var=mongo_gpg_res
+          - debug: var=repo_file_moved
 
-          - name: add mongodb repo
-            when: mongo_gpg_res is success
-            apt_repository:
-              repo: deb https://repo.mongodb.org/apt/ubuntu bionic/mongodb-org/4.0 multiverse
-              state: present
-            register: mongo_repo_res
-
-          - debug: var=mongo_repo_res
-
-          - name: install mongodb v 4.0
-            when: mongo_gpg_res is success
-            apt:
+          - name: install mongodb
+            yum:
               name: mongodb-org
               state: latest
-              force: no
               update_cache: yes
-              cache_valid_time: 3600
             register: mongodb_installed_res
 
           - debug: var=mongodb_installed_res
@@ -153,33 +137,11 @@
 
           - debug: var=chown_mongodb_res
 
-          - name: run ipgateway stuff
-            shell: node ./get-gateway.js
-            register: ipgateway_res
-
-          - debug: var=ipgateway_res
-
-          - name: get instance ID of this EC2 instance
-            shell: curl http://169.254.169.254/latest/meta-data/instance-id
-            register: instance_id_res
-
-          - debug: var=instance_id_res
-
-          - name: get facts about ENI attached to this EC2 instance
-            ec2_eni_facts:
-              region: ca-central-1
-              filters:
-                attachment.instance-id: "{{ instance_id_res.stdout_lines[0] }}"
-                attachment.device-index: '1'
-            register: eni_res
-
-          - debug: var=eni_res
-
-          - name: add ENI private IP address to mongod-repl.conf
+          - name: add private IP address to mongod-repl.conf
             lineinfile:
                 dest: ./mongod-repl.conf
                 regexp: '^\s{1,}bindIp'
-                line: '  bindIp: {{ eni_res.network_interfaces[0].private_dns_name }}'
+                line: '  bindIp: 127.0.0.1,{{ansible_eth0.ipv4.address}}'
                 state: present
             register: priv_ip_res
 
@@ -208,11 +170,17 @@
                 * hard nproc 32000
             register: nproc_conf_res
 
+          - name: get hostname
+            shell: hostname
+            register: hostname_res
+
+          - debug: var=hostname_res
+
           - name: update "/etc/hosts"
             lineinfile:
                 dest: /etc/hosts
                 regexp: '^127.0.0.1'
-                line: '127.0.0.1 localhost {{ eni_res.network_interfaces[0].private_dns_name }}'
+                line: '127.0.0.1 localhost {{ hostname_res.stdout }}'
                 state: present
             register: update_hosts_res
 
@@ -312,53 +280,7 @@
 
           - name: send notification email
             when: mongod_up_res is success
-            shell: node ./notifier/data.js {{ fqdn_res.stdout }} {{ eni_res.network_interfaces[0].private_dns_name }} {{ EMAIL_SENDER }} {{ eni_res.network_interfaces[0].private_ip_address }} {{ eni_res.network_interfaces[0].association.public_ip }}
+            shell: node ./notifier/data.js {{ fqdn_res.stdout }} {{ EMAIL_SENDER }} 
             register: email_res
 
           - debug: var=email_res
-
-          - name: edit eni netplan config file
-            blockinfile:
-              path: ./eni-netplan-config.yaml
-              block: |
-                network:
-                  version: 2
-                  renderer: networkd
-                  ethernets:
-                    eth1:
-                      dhcp4: false
-                      match:
-                        macaddress: {{ eni_res.network_interfaces[0].mac_address }}
-                      set-name: eth1
-            register: netplan_conf_res
-
-          - debug: var=netplan_conf_res
-
-          - name: Delete the cloud-init config file
-            file:
-              path: /etc/netplan/50-cloud-init.yaml
-              state: absent
-            register: cloud_init_deleted
-
-          - debug: var=cloud_init_deleted
-
-          - name: disable cloud init auto config
-            shell: mv ./99-disable-network-config.cfg /etc/cloud/cloud.cfg.d/99-disable-network-config.cfg
-            register: disabled_cloud_init
-
-          - debug: var=disabled_cloud_init
-
-          - name: copy eni netplan config to /etc/netplan dir
-            shell: mv ./eni-netplan-config.yaml /etc/netplan/eni-netplan-config.yaml
-            register: eni_netplan_res
-
-          - debug: var=eni_netplan_res
-
-          - name: apply new netplan
-            shell: 'netplan --debug apply'
-            register: netplan_res
-
-          - debug: var=netplan_res
-
-          - name: shut down eth0
-            shell: ip link set eth0 down

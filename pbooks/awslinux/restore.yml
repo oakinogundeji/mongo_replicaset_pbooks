@@ -1,0 +1,56 @@
+---
+    - name: download existing database files
+      when: s3_list_res.s3_keys[0] == "mongo_data.tar.gz"
+      aws_s3:
+          bucket: "{{BACKUP_BUCKET}}"
+          object: "{{ s3_list_res.s3_keys[0] }}"
+          dest: /home/ubuntu/s3_obj.tar.gz
+          mode: get
+      register: s3_download_res
+
+    - debug: var=s3_download_res
+
+    - name: extract s3 tarball to /home/ubuntu
+      when: s3_download_res is success
+      shell: cd /home/ubuntu && tar xvzf /home/ubuntu/s3_obj.tar.gz
+      register: untarred_res
+
+    - debug: var=untarred_res
+
+    - name: copy contents of untarred dir to /data
+      when: untarred_res is success
+      shell: cp -r /home/ubuntu/data_backup/. /data
+      register: data_copied
+
+    - debug: var=data_copied
+
+    - name: reset ownership of all data in /data
+      when: data_copied is success
+      shell: chown -R mongodb:mongodb /data
+      register: ownership_rest_res
+
+    - debug: var=ownership_rest_res
+
+    - name: delete mongod.lock files
+      when: ownership_rest_res is success
+      file:
+          path: "{{ item }}"
+          state: absent
+      with_items:
+          - /home/ubuntu/data_backup/mongod.lock
+          - /data/mongod.lock
+      register: del_lock_res
+
+    - debug: var=del_lock_res
+
+    - name: delete unneeded directories
+      when: del_lock_res is success
+      file:
+          path: "{{ item }}"
+          state: absent
+      with_items:
+          - /home/ubuntu/data_backup
+          - /home/ubuntu/s3_obj.tar.gz
+      register: deleted_untar_res
+
+    - debug: var=deleted_untar_res

@@ -1,0 +1,16 @@
+{
+  "name": "notifier",
+  "version": "1.0.0",
+  "description": "a node module to send email notification using AWS SES",
+  "main": "notifier.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "",
+  "dependencies": {
+    "aws-sdk": "^2.7.10",
+    "nodemailer": "^2.6.4",
+    "nodemailer-ses-transport": "^1.5.0"
+  }
+}
