@@ -1,0 +1,24 @@
+network:
+  version: 2
+  renderer: networkd
+  ethernets:
+    eth1:
+      match:
+        macaddress: {{ eni_res.network_interfaces[0].mac_address }}
+      addresses:
+       - {{ eni_res.network_interfaces[0].private_ip_address }}/20
+      set-name: eth1
+      dhcp4: no
+      routes:
+       - to: 0.0.0.0/0
+         via: {{ ipgateway_res.stdout_lines[0] }}
+         table: 1000
+         on-link: true
+       - to: {{ eni_res.network_interfaces[0].private_ip_address }}
+         via: 0.0.0.0
+         scope: link
+         table: 1000
+         on-link: true
+      routing-policy:
+        - from: {{ eni_res.network_interfaces[0].private_ip_address }}
+          table: 1000

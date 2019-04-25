@@ -185,36 +185,6 @@
 
           - debug: var=priv_ip_res
 
-          - name: edit eni netplan config file
-            blockinfile:
-              path: ./eni-netplan-config.yaml
-              block: |
-                network:
-                  version: 2
-                  renderer: networkd
-                  ethernets:
-                    eth1:
-                      match:
-                        macaddress: {{ eni_res.network_interfaces[0].mac_address }}
-                      addresses:
-                       - {{ eni_res.network_interfaces[0].private_ip_address }}/20
-                      set-name: eth1
-                      dhcp4: no
-                      routes:
-                       - to: 0.0.0.0/0
-                         via: {{ ipgateway_res.stdout_lines[0] }}
-                         table: 1000
-                       - to: {{ eni_res.network_interfaces[0].private_ip_address }}
-                         via: 0.0.0.0
-                         scope: link
-                         table: 1000
-                      routing-policy:
-                        - from: {{ eni_res.network_interfaces[0].private_ip_address }}
-                          table: 1000
-            register: netplan_conf_res
-
-          - debug: var=netplan_conf_res
-
           - name: edit limits.conf file
             when: priv_ip_res is success
             blockinfile:
@@ -270,18 +240,6 @@
             register: new_conf_res
 
           - debug: var=new_conf_res
-
-          - name: copy eni netplan config to /etc/netplan dir
-            shell: mv ./eni-netplan-config.yaml /etc/netplan/eni-netplan-config.yaml
-            register: eni_netplan_res
-
-          - debug: var=eni_netplan_res
-
-          - name: apply new netplan
-            shell: 'netplan --debug apply'
-            register: netplan_res
-
-          - debug: var=netplan_res
 
           - name: get ansible_fqdn value
             when: new_conf_res is success
@@ -352,9 +310,54 @@
 
           - debug: var=mongod_up_res
 
+          - name: edit eni netplan config file
+            blockinfile:
+              path: ./eni-netplan-config.yaml
+              block: |
+                network:
+                  version: 2
+                  ethernets:
+                    eth1:
+                      dhcp4: false
+                      match:
+                        macaddress: {{ eni_res.network_interfaces[0].mac_address }}
+                      set-name: eth1
+            register: netplan_conf_res
+
+          - debug: var=netplan_conf_res
+
+          - name: Delete the cloud-init config file
+            file:
+              path: /etc/netplan/50-cloud-init.yaml
+              state: absent
+            register: cloud_init_deleted
+
+          - debug: var=cloud_init_deleted
+
+          - name: disable cloud init auto config
+            shell: mv ./99-disable-network-config.cfg /etc/cloud/cloud.cfg.d/99-disable-network-config.cfg
+            register: disabled_cloud_init
+
+          - debug: var=disabled_cloud_init
+
+          - name: copy eni netplan config to /etc/netplan dir
+            shell: mv ./eni-netplan-config.yaml /etc/netplan/eni-netplan-config.yaml
+            register: eni_netplan_res
+
+          - debug: var=eni_netplan_res
+
+          - name: apply new netplan
+            shell: 'netplan --debug apply'
+            register: netplan_res
+
+          - debug: var=netplan_res
+
           - name: send notification email
             when: mongod_up_res is success
             shell: node ./notifier/data.js {{ fqdn_res.stdout }} {{ eni_res.network_interfaces[0].private_dns_name }} {{ EMAIL_SENDER }} {{ eni_res.network_interfaces[0].private_ip_address }}
             register: email_res
 
           - debug: var=email_res
+
+          - name: shut down eth0
+            shell: ip link eth0 down
