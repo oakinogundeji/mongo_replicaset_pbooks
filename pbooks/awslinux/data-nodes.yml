@@ -247,10 +247,9 @@
             ignore_errors: True
 
           - name: restart mongod daemon
-            when: keyfile_chown_res is success
             service:
               name: mongod
-              state: restarted
+              state: started
               enabled: yes
             register: mongod_up_res
 
