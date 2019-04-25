@@ -128,7 +128,7 @@
 
           - name: chown of /data, /journal and /log dirs
             when: mongodb_installed_res is success
-            shell: chown -R mongodb:mongodb {{ item }}
+            shell: chown -R mongod:mongod {{ item }}
             with_items:
                 - /data
                 - /log
@@ -280,7 +280,7 @@
 
           - name: send notification email
             when: mongod_up_res is success
-            shell: node ./notifier/data.js {{ fqdn_res.stdout }} {{ EMAIL_SENDER }} 
+            shell: node ./notifier/data.js {{ fqdn_res.stdout }} {{ EMAIL_SENDER }}
             register: email_res
 
           - debug: var=email_res
