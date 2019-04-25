@@ -125,6 +125,9 @@
             service:
               name: mongod
               state: stopped
+            register: mongod_stopped
+
+          - debug: var=mongod_stopped
 
           - name: chown of /data, /journal and /log dirs
             when: mongodb_installed_res is success
