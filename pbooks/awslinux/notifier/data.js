@@ -8,7 +8,8 @@ const
     AWS = require('aws-sdk'),
     nodemailer = require('nodemailer'),
     sesTransport = require('nodemailer-ses-transport'),
-    hostname = process.argv[2];
+    hostname = process.argv[2],
+    emailSender = process.argv[3];
 //=============================================================================
 /**
  * Module config
