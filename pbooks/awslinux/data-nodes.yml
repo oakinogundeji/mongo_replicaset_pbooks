@@ -245,17 +245,3 @@
           - include_tasks: restore.yml
             when: s3_list_res.s3_keys[0] == "mongo_data.tar.gz"
             ignore_errors: True
-
-          - name: send notification email
-            shell: node ./notifier/data.js {{ fqdn_res.stdout }} {{ EMAIL_SENDER }}
-            register: email_res
-
-          - debug: var=email_res
-
-          - name: restart mongod daemon
-            when: email_res is success
-            service:
-              name: mongod
-              state: restarted
-              enabled: yes
-            register: mongod_up_res
