@@ -39,32 +39,31 @@ async function getHostname() {
 let mailer = nodemailer.createTransport(sesTransport({
     ses: SES
 }));
-
-const msg = {
-    to: 'oakinogundeji@gmail.com',
-    from: emailSender,
-    subject: 'Replica set member status',
-    text: `The replica set member with hostname ${hostname} is up!`,
-    html: `<p>The replica set member with hostname <em>${hostname}</em> is up!</p>`
-};
 //=============================================================================
 /**
  * Module functionality
  */
 //=============================================================================
-function sesMail(msg, hostname) {
-    return mailer.sendMail(msg, (err, result) => {
-      if(err) {
-          console.log('There was an ses error');
-          return console.error(err);
-      } else {
-          console.log('Success...');
-          return console.log(result);
-      };
-    })
+function sesMail(hostname) {
+  const msg = {
+      to: 'oakinogundeji@gmail.com',
+      from: emailSender,
+      subject: 'Replica set member status',
+      text: `The replica set member with hostname ${hostname} is up!`,
+      html: `<p>The replica set member with hostname <em>${hostname}</em> is up!</p>`
+  };
+  return mailer.sendMail(msg, (err, result) => {
+    if(err) {
+        console.log('There was an ses error');
+        return console.error(err);
+    } else {
+        console.log('Success...');
+        return console.log(result);
+    };
+  })
 }
 //=============================================================================
 getHostname()
-  .then(name => sesMail(msg, name))
+  .then(name => sesMail(name))
   .catch(err => console.error(err));
 //=============================================================================
