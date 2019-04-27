@@ -4,22 +4,22 @@
       aws_s3:
           bucket: "{{BACKUP_BUCKET}}"
           object: "{{ s3_list_res.s3_keys[0] }}"
-          dest: /home/ubuntu/s3_obj.tar.gz
+          dest: /home/ec2-user/s3_obj.tar.gz
           mode: get
       register: s3_download_res
 
     - debug: var=s3_download_res
 
-    - name: extract s3 tarball to /home/ubuntu
+    - name: extract s3 tarball to /home/ec2-user
       when: s3_download_res is success
-      shell: cd /home/ubuntu && tar xvzf /home/ubuntu/s3_obj.tar.gz
+      shell: cd /home/ec2-user && tar xvzf /home/ec2-user/s3_obj.tar.gz
       register: untarred_res
 
     - debug: var=untarred_res
 
     - name: copy contents of untarred dir to /data
       when: untarred_res is success
-      shell: cp -r /home/ubuntu/data_backup/. /data
+      shell: cp -r /home/ec2-user/data_backup/. /data
       register: data_copied
 
     - debug: var=data_copied
@@ -37,7 +37,7 @@
           path: "{{ item }}"
           state: absent
       with_items:
-          - /home/ubuntu/data_backup/mongod.lock
+          - /home/ec2-user/data_backup/mongod.lock
           - /data/mongod.lock
       register: del_lock_res
 
@@ -49,8 +49,8 @@
           path: "{{ item }}"
           state: absent
       with_items:
-          - /home/ubuntu/data_backup
-          - /home/ubuntu/s3_obj.tar.gz
+          - /home/ec2-user/data_backup
+          - /home/ec2-user/s3_obj.tar.gz
       register: deleted_untar_res
 
     - debug: var=deleted_untar_res
