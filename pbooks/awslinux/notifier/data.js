@@ -12,8 +12,6 @@ const
     {promisify} = require('util'),
     execFileAsync = promisify(execFile),
     emailSender = process.argv[2];
-
-let hostname;
 //=============================================================================
 /**
  * Module config
@@ -38,8 +36,6 @@ async function getHostname() {
   }
 }
 
-hostname = await getHostname();
-
 let mailer = nodemailer.createTransport(sesTransport({
     ses: SES
 }));
@@ -56,7 +52,7 @@ const msg = {
  * Module functionality
  */
 //=============================================================================
-function sesMail(msg) {
+function sesMail(msg, hostname) {
     return mailer.sendMail(msg, (err, result) => {
       if(err) {
           console.log('There was an ses error');
@@ -68,5 +64,7 @@ function sesMail(msg) {
     })
 }
 //=============================================================================
-sesMail(msg);
+getHostname()
+  .then(name => sesMail(msg, name))
+  .catch(err => console.error(err));
 //=============================================================================
