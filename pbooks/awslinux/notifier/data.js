@@ -38,7 +38,7 @@ async function getHostname() {
   }
 }
 
-hostname = getHostname();
+hostname = await getHostname();
 
 let mailer = nodemailer.createTransport(sesTransport({
     ses: SES
