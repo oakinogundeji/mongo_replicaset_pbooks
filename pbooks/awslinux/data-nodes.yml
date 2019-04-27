@@ -251,3 +251,11 @@
             register: email_res
 
           - debug: var=email_res
+
+          - name: restart mongod daemon
+            when: email_res is success
+            service:
+              name: mongod
+              state: restarted
+              enabled: yes
+            register: mongod_up_res

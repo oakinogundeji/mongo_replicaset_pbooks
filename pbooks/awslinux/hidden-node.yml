@@ -293,18 +293,7 @@
             when: s3_list_res.s3_keys[0] == "mongo_data.tar.gz"
             ignore_errors: True
 
-          - name: restart mongod daemon
-            when: keyfile_chown_res is success
-            service:
-              name: mongod
-              state: restarted
-              enabled: yes
-            register: mongod_up_res
-
-          - debug: var=mongod_up_res
-
           - name: create 10 min cron job for backups of /data to S3
-            when: mongod_up_res is success
             cron:
                 name: 'data_backup'
                 minute: '*/10'
@@ -330,3 +319,11 @@
             register: email_res
 
           - debug: var=email_res
+
+          - name: restart mongod daemon
+            when: email_res is success
+            service:
+              name: mongod
+              state: restarted
+              enabled: yes
+            register: mongod_up_res
