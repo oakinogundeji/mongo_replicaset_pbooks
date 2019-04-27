@@ -1,9 +1,8 @@
 'use strict';
 
 const
-  {exec, execFile} = require('child_process'),
+  {execFile} = require('child_process'),
   {promisify} = require('util'),
-  execAsync = promisify(exec),
   execFileAsync = promisify(execFile);
 
 async function getGateway() {

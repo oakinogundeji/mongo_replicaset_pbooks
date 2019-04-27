@@ -8,8 +8,12 @@ const
     AWS = require('aws-sdk'),
     nodemailer = require('nodemailer'),
     sesTransport = require('nodemailer-ses-transport'),
-    hostname = process.argv[2],
-    emailSender = process.argv[3];
+    {execFile} = require('child_process'),
+    {promisify} = require('util'),
+    execFileAsync = promisify(execFile),
+    emailSender = process.argv[2];
+
+let hostname;
 //=============================================================================
 /**
  * Module config
@@ -18,6 +22,23 @@ const
 AWS.config.update({region: 'us-east-1'});
 
 const SES = new AWS.SES();
+
+async function getHostname() {
+  const {stdout, stderr, error} = await execFileAsync('hostname');
+  console.log('stdout');
+  console.log(stdout);
+  return stdout;
+  if(error){
+    console.log('error');
+    return error;
+  }
+  if(stderr) {
+    console.log('stderr');
+    return stderr;
+  }
+}
+
+hostname = getHostname();
 
 let mailer = nodemailer.createTransport(sesTransport({
     ses: SES
