@@ -158,7 +158,7 @@
 
           - name: add ENI private IP address to mongod-repl.conf
             lineinfile:
-                dest: ./mongod-repl.conf
+                dest: ../mongod-repl.conf
                 regexp: '^\s{1,}bindIp'
                 line: '  bindIp: {{ eni_res.network_interfaces[0].private_dns_name }}'
                 state: present
@@ -208,7 +208,7 @@
 
           - name: copy mongod-repl to /etc/mongod.conf
             when: conf_backup_res is success
-            shell: mv mongod-repl.conf /etc/mongod.conf
+            shell: mv ../mongod-repl.conf /etc/mongod.conf
             register: new_conf_res
 
           - debug: var=new_conf_res
