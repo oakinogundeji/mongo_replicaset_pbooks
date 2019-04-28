@@ -255,13 +255,3 @@
             register: cron_res
 
           - debug: var=cron_res
-
-          - name: restart cron daemon
-            when: cron_res is success
-            service:
-              name: crond
-              state: restarted
-              enabled: yes
-            register: crontab_res
-
-          - debug: var=crontab_res
