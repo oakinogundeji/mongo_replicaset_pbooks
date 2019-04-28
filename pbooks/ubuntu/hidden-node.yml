@@ -164,6 +164,7 @@
               region: ca-central-1
               filters:
                 attachment.instance-id: "{{ instance_id_res.stdout_lines[0] }}"
+                attachment.device-index: '1'
             register: eni_res
 
           - debug: var=eni_res
@@ -172,7 +173,7 @@
             lineinfile:
                 dest: ./mongod-repl.conf
                 regexp: '^\s{1,}bindIp'
-                line: '  bindIp: {{ eni_res.network_interfaces[1].private_dns_name }}'
+                line: '  bindIp: 127.0.0.1,{{ eni_res.network_interfaces[0].private_dns_name }}'
                 state: present
             register: priv_ip_res
 
@@ -201,12 +202,11 @@
                 * hard nproc 32000
             register: nproc_conf_res
 
-          - name: update "/etc/hosts"
+          - name: update "/etc/hosts" by adding entry for ENI immediatly after the line for localhost
             lineinfile:
                 dest: /etc/hosts
-                regexp: '^127.0.0.1'
-                line: '127.0.0.1 localhost {{ eni_res.network_interfaces[1].private_dns_name }}'
-                state: present
+                line: '{{ eni_res.network_interfaces[0].private_ip_address }} {{ eni_res.network_interfaces[0].private_dns_name }}'
+                insertafter: '^127.0.0.1'
             register: update_hosts_res
 
           - debug: var=update_hosts_res
@@ -330,3 +330,45 @@
             register: email_res
 
           - debug: var=email_res
+
+          - name: edit eni netplan config file
+            blockinfile:
+              path: ./eni-netplan-config.yaml
+              block: |
+                network:
+                  version: 2
+                  renderer: networkd
+                  ethernets:
+                    eth1:
+                      match:
+                        macaddress: {{ eni_res.network_interfaces[0].mac_address }}
+                      addresses:
+                       - {{ eni_res.network_interfaces[0].private_ip_address }}/20
+                      set-name: eth1
+                      dhcp4: no
+                      routes:
+                       - to: 0.0.0.0/0
+                         via: {{ ipgateway_res.stdout_lines[0] }}
+                         table: 1000
+                       - to: {{ eni_res.network_interfaces[0].private_ip_address }}
+                         via: 0.0.0.0
+                         scope: link
+                         table: 1000
+                      routing-policy:
+                        - from: {{ eni_res.network_interfaces[0].private_ip_address }}
+                          table: 1000
+            register: netplan_conf_res
+
+          - debug: var=netplan_conf_res
+
+          - name: copy eni netplan config to /etc/netplan dir
+            shell: mv ./eni-netplan-config.yaml /etc/netplan/eni-netplan-config.yaml
+            register: eni_netplan_res
+
+          - debug: var=eni_netplan_res
+
+          - name: apply new netplan
+            shell: 'netplan --debug apply'
+            register: netplan_res
+
+          - debug: var=netplan_res

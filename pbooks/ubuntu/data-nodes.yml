@@ -179,7 +179,7 @@
             lineinfile:
                 dest: ./mongod-repl.conf
                 regexp: '^\s{1,}bindIp'
-                line: '  bindIp: {{ eni_res.network_interfaces[0].private_dns_name }}'
+                line: '  bindIp: 127.0.0.1,{{ eni_res.network_interfaces[0].private_dns_name }}'
                 state: present
             register: priv_ip_res
 
@@ -208,12 +208,11 @@
                 * hard nproc 32000
             register: nproc_conf_res
 
-          - name: update "/etc/hosts"
+          - name: update "/etc/hosts" by adding entry for ENI immediatly after the line for localhost
             lineinfile:
                 dest: /etc/hosts
-                regexp: '^127.0.0.1'
-                line: '127.0.0.1 localhost {{ eni_res.network_interfaces[0].private_dns_name }}'
-                state: present
+                line: '{{ eni_res.network_interfaces[0].private_ip_address }} {{ eni_res.network_interfaces[0].private_dns_name }}'
+                insertafter: '^127.0.0.1'
             register: update_hosts_res
 
           - debug: var=update_hosts_res
@@ -326,27 +325,26 @@
                   renderer: networkd
                   ethernets:
                     eth1:
-                      dhcp4: false
                       match:
                         macaddress: {{ eni_res.network_interfaces[0].mac_address }}
+                      addresses:
+                       - {{ eni_res.network_interfaces[0].private_ip_address }}/20
                       set-name: eth1
+                      dhcp4: no
+                      routes:
+                       - to: 0.0.0.0/0
+                         via: {{ ipgateway_res.stdout_lines[0] }}
+                         table: 1000
+                       - to: {{ eni_res.network_interfaces[0].private_ip_address }}
+                         via: 0.0.0.0
+                         scope: link
+                         table: 1000
+                      routing-policy:
+                        - from: {{ eni_res.network_interfaces[0].private_ip_address }}
+                          table: 1000
             register: netplan_conf_res
 
           - debug: var=netplan_conf_res
-
-          - name: Delete the cloud-init config file
-            file:
-              path: /etc/netplan/50-cloud-init.yaml
-              state: absent
-            register: cloud_init_deleted
-
-          - debug: var=cloud_init_deleted
-
-          - name: disable cloud init auto config
-            shell: mv ./99-disable-network-config.cfg /etc/cloud/cloud.cfg.d/99-disable-network-config.cfg
-            register: disabled_cloud_init
-
-          - debug: var=disabled_cloud_init
 
           - name: copy eni netplan config to /etc/netplan dir
             shell: mv ./eni-netplan-config.yaml /etc/netplan/eni-netplan-config.yaml
@@ -359,6 +357,3 @@
             register: netplan_res
 
           - debug: var=netplan_res
-
-          - name: shut down eth0
-            shell: ip link set eth0 down
