@@ -259,7 +259,7 @@
           - name: restart cron daemon
             when: cron_res is success
             service:
-              name: cron
+              name: crond
               state: restarted
               enabled: yes
             register: crontab_res
