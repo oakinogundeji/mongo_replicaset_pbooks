@@ -26,7 +26,7 @@
 
     - name: reset ownership of all data in /data
       when: data_copied is success
-      shell: chown -R mongodb:mongodb /data
+      shell: chown -R mongod:mongod /data
       register: ownership_rest_res
 
     - debug: var=ownership_rest_res

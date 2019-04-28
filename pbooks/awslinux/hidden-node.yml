@@ -105,33 +105,17 @@
 
           - debug: var=journal_link_res
 
-          - name: import mongodb GPG key
-            when: journal_link_res is success
-            apt_key:
-              keyserver: hkp://keyserver.ubuntu.com:80
-              id: 9DA31620334BD75D9DCB49F368818C72E52529D4
-              state: present
-            register: mongo_gpg_res
+          - name: move ./mongodb-org-4.0.repo to /etc/yum.repos.d/mongodb-org-4.0.repo file
+            shell: mv ./mongodb-org-4.0.repo /etc/yum.repos.d/mongodb-org-4.0.repo
+            register: repo_file_moved
 
-          - debug: var=mongo_gpg_res
+          - debug: var=repo_file_moved
 
-          - name: add mongodb repo
-            when: mongo_gpg_res is success
-            apt_repository:
-              repo: deb https://repo.mongodb.org/apt/ubuntu bionic/mongodb-org/4.0 multiverse
-              state: present
-            register: mongo_repo_res
-
-          - debug: var=mongo_repo_res
-
-          - name: install mongodb v 4.0
-            when: mongo_gpg_res is success
-            apt:
+          - name: install mongodb
+            yum:
               name: mongodb-org
               state: latest
-              force: no
               update_cache: yes
-              cache_valid_time: 3600
             register: mongodb_installed_res
 
           - debug: var=mongodb_installed_res
@@ -141,10 +125,13 @@
             service:
               name: mongod
               state: stopped
+            register: mongod_stopped
+
+          - debug: var=mongod_stopped
 
           - name: chown of /data, /journal and /log dirs
             when: mongodb_installed_res is success
-            shell: chown -R mongodb:mongodb {{ item }}
+            shell: chown -R mongod:mongod {{ item }}
             with_items:
                 - /data
                 - /log
@@ -153,26 +140,11 @@
 
           - debug: var=chown_mongodb_res
 
-          - name: get instance ID of this EC2 instance
-            shell: curl http://169.254.169.254/latest/meta-data/instance-id
-            register: instance_id_res
-
-          - debug: var=instance_id_res
-
-          - name: get facts about ENI attached to this EC2 instance
-            ec2_eni_facts:
-              region: ca-central-1
-              filters:
-                attachment.instance-id: "{{ instance_id_res.stdout_lines[0] }}"
-            register: eni_res
-
-          - debug: var=eni_res
-
-          - name: add ENI private IP address to mongod-repl.conf
+          - name: add private IP address to mongod-repl.conf
             lineinfile:
                 dest: ./mongod-repl.conf
                 regexp: '^\s{1,}bindIp'
-                line: '  bindIp: {{ eni_res.network_interfaces[1].private_dns_name }}'
+                line: '  bindIp: 127.0.0.1,{{ansible_eth0.ipv4.address}}'
                 state: present
             register: priv_ip_res
 
@@ -201,27 +173,24 @@
                 * hard nproc 32000
             register: nproc_conf_res
 
+          - name: get hostname
+            shell: hostname
+            register: hostname_res
+
+          - debug: var=hostname_res
+
           - name: update "/etc/hosts"
             lineinfile:
                 dest: /etc/hosts
                 regexp: '^127.0.0.1'
-                line: '127.0.0.1 localhost {{ eni_res.network_interfaces[1].private_dns_name }}'
+                line: '127.0.0.1 localhost {{ hostname_res.stdout }}'
                 state: present
             register: update_hosts_res
 
           - debug: var=update_hosts_res
 
-          - name: turn off core dumps
-            when: update_hosts_res is success
-            lineinfile:
-              dest: /etc/default/apport
-              regexp: '^enabled=1'
-              line: 'enabled=0'
-              state: present
-            register: core_dumps_off
-
           - name: backup existing mongod.conf
-            when: core_dumps_off is success
+            when: update_hosts_res is success
             shell: mv /etc/mongod.conf /etc/mongod.conf.old
             register: conf_backup_res
 
@@ -241,24 +210,8 @@
 
           - debug: var=fqdn_res
 
-          - name: copy hugepages fix to /etc/systemd/system/mongod-hugepage-fix.service
-            when: fqdn_res is success
-            shell: mv hugepages-fix /etc/systemd/system/mongod-hugepage-fix.service
-            register: hugepages_res
-
-          - debug: var=hugepages_res
-
-          - name: enable hugepages fix
-            when: hugepages_res is success
-            shell: "{{item}}"
-            with_items:
-                - systemctl daemon-reload
-                - systemctl enable mongod-hugepage-fix
-                - systemctl start mongod-hugepage-fix
-            register: hupages_activated_res
-
           - name: create the /srv/mongod dir
-            when: hupages_activated_res is success
+            when: fqdn_res is success
             file:
               path: /srv/mongod
               state: directory
@@ -277,7 +230,7 @@
 
           - name: chown /srv/mongod to mongod process
             when: keyfile_chmod_res is success
-            shell: chown -R mongodb:mongodb /srv/mongod/
+            shell: chown -R mongod:mongod /srv/mongod/
             register: keyfile_chown_res
 
           - name: check for existing database files on S3
@@ -312,18 +265,3 @@
             register: crontab_res
 
           - debug: var=crontab_res
-
-          - name: send notification email
-            when: crontab_res is success
-            shell: node ./notifier/hidden.js {{ fqdn_res.stdout }} {{ eni_res.network_interfaces[1].private_dns_name }} {{ EMAIL_SENDER }} {{ eni_res.network_interfaces[1].private_ip_address }}
-            register: email_res
-
-          - debug: var=email_res
-
-          - name: restart mongod daemon
-            when: email_res is success
-            service:
-              name: mongod
-              state: restarted
-              enabled: yes
-            register: mongod_up_res
