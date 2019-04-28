@@ -160,7 +160,7 @@
             lineinfile:
                 dest: ../mongod-repl.conf
                 regexp: '^\s{1,}bindIp'
-                line: '  bindIp: {{ eni_res.network_interfaces[0].private_dns_name }}'
+                line: '  bindIp: {{ eni_res.network_interfaces[0].private_ip_address }}'
                 state: present
             register: priv_ip_res
 
