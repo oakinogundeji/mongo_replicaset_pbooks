@@ -21,4 +21,4 @@ aws s3 cp /home/ec2-user/backup/mongo_data.tar.gz s3://${2}/mongo_data.tar.gz --
 # remove the /home/ec2-user/backup directory
 sudo rm -r /home/ec2-user/backup
 # trigger email notification on successful backup
-/usr/bin/node /home/ec2-user/playbooks/pbooks/playbooks/notifier/backup-notifier.js ${1}
+/usr/bin/node /home/ec2-user/playbooks/pbooks/awslinux/notifier/backup-notifier.js ${1}

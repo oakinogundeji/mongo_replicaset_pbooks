@@ -27,7 +27,7 @@ const msg = {
     from: emailSender,
     subject: 'Data backup status',
     text: `Mongodb data has been successfully backed up to S3!`,
-    html: `<h3>Mongodb data has been successfully backed up to S3!</h3>`
+    html: `<p>Mongodb data has been successfully backed up to S3!</p>`
 };
 //=============================================================================
 /**

@@ -60,7 +60,7 @@ function sesMail(hostname) {
         console.log('Success...');
         return console.log(result);
     };
-  })
+  });
 }
 //=============================================================================
 getHostname()

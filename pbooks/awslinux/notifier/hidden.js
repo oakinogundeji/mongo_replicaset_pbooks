@@ -8,10 +8,10 @@ const
     AWS = require('aws-sdk'),
     nodemailer = require('nodemailer'),
     sesTransport = require('nodemailer-ses-transport'),
-    hostname = process.argv[2],
-    eniDNS = process.argv[3],
-    emailSender = process.argv[4],
-    eniIP = process.argv[5];
+    {execFile} = require('child_process'),
+    {promisify} = require('util'),
+    execFileAsync = promisify(execFile),
+    emailSender = process.argv[2];
 //=============================================================================
 /**
  * Module config
@@ -25,29 +25,45 @@ let mailer = nodemailer.createTransport(sesTransport({
     ses: SES
 }));
 
-const msg = {
-    to: 'oakinogundeji@gmail.com',
-    from: emailSender,
-    subject: 'Replica set member status',
-    text: `The replica set hidden member with hostname ${hostname}, ENI DNS ${eniDNS} and ENI IP ${eniIP} is up!`,
-    html: `<h3>The replica set hidden member with hostname <em>${hostname}</em>, ENI DNS <em>${eniDNS}</em>, and ENI IP <em>${eniIP}</em> is up!</h3>`
-};
+async function getHostname() {
+  const {stdout, stderr, error} = await execFileAsync('hostname');
+  console.log('stdout');
+  console.log(stdout);
+  return stdout;
+  if(error){
+    console.log('error');
+    return error;
+  }
+  if(stderr) {
+    console.log('stderr');
+    return stderr;
+  }
+}
 //=============================================================================
 /**
  * Module functionality
  */
 //=============================================================================
-function sesMail(msg) {
-    return mailer.sendMail(msg, (err, result) => {
-      if(err) {
-          console.log('There was an ses error');
-          return console.error(err);
-      } else {
-          console.log('Success...');
-          return console.log(result);
-      };
-    })
+function sesMail(hostname) {
+  const msg = {
+      to: 'oakinogundeji@gmail.com',
+      from: emailSender,
+      subject: 'Replica set member status',
+      text: `The replica set hidden member with hostname ${hostname} is up!`,
+      html: `<p>The replica set hidden member with hostname <em>${hostname}</em> is up!</p>`
+  };
+  return mailer.sendMail(msg, (err, result) => {
+    if(err) {
+        console.log('There was an ses error');
+        return console.error(err);
+    } else {
+        console.log('Success...');
+        return console.log(result);
+    };
+  });
 }
 //=============================================================================
-sesMail(msg);
+getHostname()
+  .then(name => sesMail(name))
+  .catch(err => console.error(err));
 //=============================================================================
