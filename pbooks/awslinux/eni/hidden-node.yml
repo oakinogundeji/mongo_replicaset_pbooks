@@ -105,8 +105,8 @@
 
           - debug: var=journal_link_res
 
-          - name: move ./mongodb-org-4.0.repo to /etc/yum.repos.d/mongodb-org-4.0.repo file
-            shell: mv ./mongodb-org-4.0.repo /etc/yum.repos.d/mongodb-org-4.0.repo
+          - name: move ../mongodb-org-4.0.repo to /etc/yum.repos.d/mongodb-org-4.0.repo file
+            shell: mv ../mongodb-org-4.0.repo /etc/yum.repos.d/mongodb-org-4.0.repo
             register: repo_file_moved
 
           - debug: var=repo_file_moved
@@ -142,7 +142,7 @@
 
           - name: add private IP address to mongod-repl.conf
             lineinfile:
-                dest: ./mongod-repl.conf
+                dest: ../mongod-repl.conf
                 regexp: '^\s{1,}bindIp'
                 line: '  bindIp: 127.0.0.1,{{ansible_eth0.ipv4.address}}'
                 state: present
@@ -198,7 +198,7 @@
 
           - name: copy mongod-repl to /etc/mongod.conf
             when: conf_backup_res is success
-            shell: mv mongod-repl.conf /etc/mongod.conf
+            shell: mv ../mongod-repl.conf /etc/mongod.conf
             register: new_conf_res
 
           - debug: var=new_conf_res
@@ -220,7 +220,7 @@
 
           - name: copy shared replicaset-keyfile to /srv/mongod/
             when: keyfile_dir_res is success
-            shell: mv replicaset-keyfile /srv/mongod/replicaset-keyfile
+            shell: mv ../replicaset-keyfile /srv/mongod/replicaset-keyfile
             register: keyfile_copy_res
 
           - name: change permissions for /srv/mongod/replicaset-keyfile
