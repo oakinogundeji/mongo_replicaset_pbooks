@@ -195,10 +195,11 @@
 
           - debug: var=hostname_res
 
-          - name: update "/etc/hosts" by adding entry for ENI
+          - name: update "/etc/hosts" by adding entry for ENI immediatly after the line for localhost
             lineinfile:
                 dest: /etc/hosts
                 line: '{{ eni_res.network_interfaces[0].private_ip_address }} {{ eni_res.network_interfaces[0].private_dns_name }}'
+                insertafter: '^127.0.0.1'
             register: update_hosts_res
 
           - debug: var=update_hosts_res
