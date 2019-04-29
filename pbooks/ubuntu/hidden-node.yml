@@ -325,7 +325,7 @@
           - debug: var=crontab_res
 
           - name: send notification email
-            shell: node ./notifier/hidden.js {{ fqdn_res.stdout }} {{ eni_res.network_interfaces[1].private_dns_name }} {{ EMAIL_SENDER }} {{ eni_res.network_interfaces[1].private_ip_address }}
+            shell: node ./notifier/data.js {{ fqdn_res.stdout }} {{ eni_res.network_interfaces[0].private_dns_name }} {{ EMAIL_SENDER }} {{ eni_res.network_interfaces[0].private_ip_address }}
             register: email_res
 
           - debug: var=email_res
