@@ -310,8 +310,7 @@
           - debug: var=mongod_up_res
 
           - name: send notification email
-            when: mongod_up_res is success
-            shell: node ./notifier/data.js {{ fqdn_res.stdout }} {{ eni_res.network_interfaces[0].private_dns_name }} {{ EMAIL_SENDER }} {{ eni_res.network_interfaces[0].private_ip_address }} {{ eni_res.network_interfaces[0].association.public_ip }}
+            shell: node ./notifier/data.js {{ fqdn_res.stdout }} {{ eni_res.network_interfaces[0].private_dns_name }} {{ EMAIL_SENDER }} {{ eni_res.network_interfaces[0].private_ip_address }}
             register: email_res
 
           - debug: var=email_res

@@ -11,8 +11,7 @@ const
     hostname = process.argv[2],
     eniDNS = process.argv[3],
     emailSender = process.argv[4],
-    eniPrivateIP = process.argv[5],
-    eniPublicIP = process.argv[6];
+    eniPrivateIP = process.argv[5];
 //=============================================================================
 /**
  * Module config
@@ -30,8 +29,8 @@ const msg = {
     to: 'oakinogundeji@gmail.com',
     from: emailSender,
     subject: 'Replica set member status',
-    text: `The replica set member with hostname ${hostname}, ENI DNS ${eniDNS} and ENI private IP ${eniPrivateIP}, ENI public IP ${eniPublicIP} is up!`,
-    html: `<p>The replica set member with hostname <em>${hostname}</em>, ENI DNS <em>${eniDNS}</em>, and ENI IP <em>${eniPrivateIP}</em>, <em>ENI public IP ${eniPublicIP}<em> is up!</p>`
+    text: `The replica set member with hostname ${hostname}, ENI DNS ${eniDNS} and ENI private IP ${eniPrivateIP} is up!`,
+    html: `<p>The replica set member with hostname <em>${hostname}</em>, ENI DNS <em>${eniDNS}</em>, and ENI IP <em>${eniPrivateIP}</em> is up!</p>`
 };
 //=============================================================================
 /**
