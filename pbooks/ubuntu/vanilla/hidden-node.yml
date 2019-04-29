@@ -291,7 +291,7 @@
             cron:
                 name: 'data_backup'
                 minute: '*/10'
-                job: '/bin/bash /home/ubuntu/playbooks/pbooks/ubuntu-backup.sh {{ EMAIL_SENDER }} {{BACKUP_BUCKET}}'
+                job: '/bin/bash /home/ubuntu/playbooks/pbooks/ubuntu/vanilla/ubuntu-backup.sh {{ EMAIL_SENDER }} {{BACKUP_BUCKET}}'
                 state: present
             register: cron_res
 

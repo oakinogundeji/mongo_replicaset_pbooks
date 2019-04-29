@@ -177,7 +177,7 @@
 
           - name: add ENI private IP address to mongod-repl.conf
             lineinfile:
-                dest: ./mongod-repl.conf
+                dest: ../mongod-repl.conf
                 regexp: '^\s{1,}bindIp'
                 line: '  bindIp: {{ eni_res.network_interfaces[0].private_dns_name }}'
                 state: present
@@ -235,7 +235,7 @@
 
           - name: copy mongod-repl to /etc/mongod.conf
             when: conf_backup_res is success
-            shell: mv mongod-repl.conf /etc/mongod.conf
+            shell: mv ../mongod-repl.conf /etc/mongod.conf
             register: new_conf_res
 
           - debug: var=new_conf_res
@@ -249,7 +249,7 @@
 
           - name: copy hugepages fix to /etc/systemd/system/mongod-hugepage-fix.service
             when: fqdn_res is success
-            shell: mv hugepages-fix /etc/systemd/system/mongod-hugepage-fix.service
+            shell: mv ../hugepages-fix /etc/systemd/system/mongod-hugepage-fix.service
             register: hugepages_res
 
           - debug: var=hugepages_res
@@ -273,7 +273,7 @@
 
           - name: copy shared replicaset-keyfile to /srv/mongod/
             when: keyfile_dir_res is success
-            shell: mv replicaset-keyfile /srv/mongod/replicaset-keyfile
+            shell: mv ../replicaset-keyfile /srv/mongod/replicaset-keyfile
             register: keyfile_copy_res
 
           - name: change permissions for /srv/mongod/replicaset-keyfile
