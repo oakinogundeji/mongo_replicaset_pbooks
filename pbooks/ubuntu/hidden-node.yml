@@ -153,6 +153,12 @@
 
           - debug: var=chown_mongodb_res
 
+          - name: run ipgateway stuff
+            shell: node ./get-gateway.js
+            register: ipgateway_res
+
+          - debug: var=ipgateway_res
+
           - name: get instance ID of this EC2 instance
             shell: curl http://169.254.169.254/latest/meta-data/instance-id
             register: instance_id_res
