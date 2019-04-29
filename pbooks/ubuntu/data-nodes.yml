@@ -295,26 +295,6 @@
 
           - debug: var=s3_list_res
 
-          - include_tasks: restore.yml
-            when: s3_list_res.s3_keys[0] == "mongo_data.tar.gz"
-            ignore_errors: True
-
-          - name: restart mongod daemon
-            when: keyfile_chown_res is success
-            service:
-              name: mongod
-              state: restarted
-              enabled: yes
-            register: mongod_up_res
-
-          - debug: var=mongod_up_res
-
-          - name: send notification email
-            shell: node ./notifier/data.js {{ fqdn_res.stdout }} {{ eni_res.network_interfaces[0].private_dns_name }} {{ EMAIL_SENDER }} {{ eni_res.network_interfaces[0].private_ip_address }}
-            register: email_res
-
-          - debug: var=email_res
-
           - name: edit eni netplan config file
             blockinfile:
               path: ./eni-netplan-config.yaml
@@ -356,3 +336,23 @@
             register: netplan_res
 
           - debug: var=netplan_res
+
+          - include_tasks: restore.yml
+            when: s3_list_res.s3_keys[0] == "mongo_data.tar.gz"
+            ignore_errors: True
+
+          - name: restart mongod daemon
+            when: keyfile_chown_res is success
+            service:
+              name: mongod
+              state: restarted
+              enabled: yes
+            register: mongod_up_res
+
+          - debug: var=mongod_up_res
+
+          - name: send notification email
+            shell: node ./notifier/data.js {{ fqdn_res.stdout }} {{ eni_res.network_interfaces[0].private_dns_name }} {{ EMAIL_SENDER }} {{ eni_res.network_interfaces[0].private_ip_address }}
+            register: email_res
+
+          - debug: var=email_res
