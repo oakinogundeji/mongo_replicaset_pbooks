@@ -21,4 +21,4 @@ aws s3 cp /home/ubuntu/backup/mongo_data.tar.gz s3://${2}/mongo_data.tar.gz --st
 # remove the /home/ubuntu/backup directory
 sudo rm -r /home/ubuntu/backup
 # trigger email notification on successful backup
-/usr/bin/node /home/ubuntu/playbooks/pbooks/playbooks/notifier/backup-notifier.js ${1}
+/usr/bin/node /home/ubuntu/playbooks/pbooks/ubuntu/vanilla/notifier/backup-notifier.js ${1}
