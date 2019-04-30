@@ -150,7 +150,7 @@
             lineinfile:
                 dest: ../mongod-repl.conf
                 regexp: '^\s{1,}bindIp'
-                line: '  bindIp: 127.0.0.1,{{pub_ip.stdout}}'
+                line: '  bindIp: *'
                 state: present
             register: priv_ip_res
 
