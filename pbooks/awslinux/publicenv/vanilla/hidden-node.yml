@@ -150,7 +150,7 @@
             lineinfile:
                 dest: ../mongod-repl.conf
                 regexp: '^\s{1,}bindIp'
-                line: '  bindIp: 127.0.0.1,{{pub_ip}}'
+                line: '  bindIp: 127.0.0.1,{{pub_ip.stdout}}'
                 state: present
             register: priv_ip_res
 
@@ -189,7 +189,7 @@
             lineinfile:
                 dest: /etc/hosts
                 regexp: '^127.0.0.1'
-                line: '127.0.0.1 localhost {{ hostname_res.stdout }} {{ pub_ip}}'
+                line: '127.0.0.1 localhost {{ hostname_res.stdout }} {{ pub_ip.stdout}}'
                 state: present
             register: update_hosts_res
 
