@@ -146,16 +146,6 @@
 
           - debug: var=pub_ip
 
-          - name: add public IP address to mongod-repl.conf
-            lineinfile:
-                dest: ../mongod-repl.conf
-                regexp: '^\s{1,}bindIp'
-                line: '  bindIp: *'
-                state: present
-            register: priv_ip_res
-
-          - debug: var=priv_ip_res
-
           - name: edit limits.conf file
             when: priv_ip_res is success
             blockinfile:
