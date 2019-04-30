@@ -1,0 +1,379 @@
+---
+    - name: provision an EC2 instance in the ca-central-1a region to join a mongodb replica set
+      hosts: localhost
+      connection: local
+      become: yes
+      become_method: sudo
+      debugger: on_failed
+      gather_facts: yes
+      tasks:
+
+          - name: query for LVM physical volume
+            shell: pvdisplay
+            register: pvdisplay_res
+
+          - debug: var=pvdisplay_res
+
+          - name: create LVM volume group
+            when: pvdisplay_res.stdout == ""
+            shell: pvcreate /dev/nvme1n1
+            register: pvcreate_res
+
+          - debug: var=pvcreate_res
+
+          - name: create LVM volume group
+            when: pvcreate_res is success
+            shell: vgcreate mongo_data /dev/nvme1n1
+            register: vgcreate_res
+
+          - debug: var=vgcreate_res
+
+          - name: create LVM "data" LVM logical volume
+            when: vgcreate_res is success
+            shell: lvcreate -l 90%vg -n data mongo_data
+            register: data_logvol_res
+
+          - debug: var=data_logvol_res
+
+          - name: create LVM "log" and "journal" logical volumes
+            when: data_logvol_res is success
+            shell: lvcreate -l 5%vg -n {{ item }} mongo_data
+            with_items:
+                - log
+                - journal
+            register: log_journal_res
+
+          - debug: var=log_journal_res
+
+          - name: format LVM logical volumes as XFS
+            when: log_journal_res is success
+            shell: mkfs.xfs /dev/mongo_data/{{ item }}
+            with_items:
+                - data
+                - log
+                - journal
+            register: xfs_res
+
+          - debug: var=xfs_res
+
+          - name: create mount points for LVM logical volumes
+            when: xfs_res is success
+            file:
+              path: "{{ item }}"
+              state: directory
+              mode: 0775
+            with_items:
+                - /data
+                - /log
+                - /journal
+            register: mount_points_res
+
+          - debug: var=mount_points_res
+
+          - name: mount all drives
+            when: mount_points_res is success
+            mount:
+                name: "{{item.label}}"
+                src: "{{item.src}}"
+                fstype: xfs
+                state: mounted
+            with_items:
+                - { label: '/data', src: '/dev/mongo_data/data'}
+                - { label: '/log', src: '/dev/mongo_data/log'}
+                - { label: '/journal', src: '/dev/mongo_data/journal'}
+            register: drives_mounted_res
+
+          - debug: var=drives_mounted_res
+
+          - name: create "/data/db" directory
+            when: drives_mounted_res is success
+            file:
+              path: /data/db
+              state: directory
+              mode: 0766
+            register: data_db_res
+
+          - debug: var=data_db_res
+
+          - name: create symlink between "/journal" and "/data/journal"
+            when: data_db_res is success
+            file:
+              src: /journal
+              dest: /data/journal
+              state: link
+            register: journal_link_res
+
+          - debug: var=journal_link_res
+
+          - name: import mongodb GPG key
+            when: journal_link_res is success
+            apt_key:
+              keyserver: hkp://keyserver.ubuntu.com:80
+              id: 9DA31620334BD75D9DCB49F368818C72E52529D4
+              state: present
+            register: mongo_gpg_res
+
+          - debug: var=mongo_gpg_res
+
+          - name: add mongodb repo
+            when: mongo_gpg_res is success
+            apt_repository:
+              repo: deb https://repo.mongodb.org/apt/ubuntu bionic/mongodb-org/4.0 multiverse
+              state: present
+            register: mongo_repo_res
+
+          - debug: var=mongo_repo_res
+
+          - name: install mongodb v 4.0
+            when: mongo_gpg_res is success
+            apt:
+              name: mongodb-org
+              state: latest
+              force: no
+              update_cache: yes
+              cache_valid_time: 3600
+            register: mongodb_installed_res
+
+          - debug: var=mongodb_installed_res
+
+          - name: stop mongod daemon
+            when: mongodb_installed_res is success
+            service:
+              name: mongod
+              state: stopped
+
+          - name: chown of /data, /journal and /log dirs
+            when: mongodb_installed_res is success
+            shell: chown -R mongodb:mongodb {{ item }}
+            with_items:
+                - /data
+                - /log
+                - /journal
+            register: chown_mongodb_res
+
+          - debug: var=chown_mongodb_res
+
+          - name: run ipgateway stuff
+            shell: node ./get-gateway.js
+            register: ipgateway_res
+
+          - debug: var=ipgateway_res
+
+          - name: get instance ID of this EC2 instance
+            shell: curl http://169.254.169.254/latest/meta-data/instance-id
+            register: instance_id_res
+
+          - debug: var=instance_id_res
+
+          - name: get facts about ENI attached to this EC2 instance
+            ec2_eni_facts:
+              region: ca-central-1
+              filters:
+                attachment.instance-id: "{{ instance_id_res.stdout_lines[0] }}"
+                attachment.device-index: '1'
+            register: eni_res
+
+          - debug: var=eni_res
+
+          - name: add ENI private IP address to mongod-repl.conf
+            lineinfile:
+                dest: ../mongod-repl.conf
+                regexp: '^\s{1,}bindIp'
+                line: '  bindIp: {{ eni_res.network_interfaces[0].private_dns_name }}'
+                state: present
+            register: priv_ip_res
+
+          - debug: var=priv_ip_res
+
+          - name: edit limits.conf file
+            when: priv_ip_res is success
+            blockinfile:
+              path: /etc/security/limits.conf
+              block: |
+                * soft nofile 64000
+                * hard nofile 64000
+                * soft nproc 32000
+                * hard nproc 32000
+              backup: yes
+            register: limits_conf_res
+
+          - debug: var=limits_conf_res
+
+          - name: create 90.nproc.conf file
+            when: limits_conf_res is success
+            copy:
+              dest: /etc/security/limits.d/90-nproc.conf
+              content: |
+                * soft nproc 32000
+                * hard nproc 32000
+            register: nproc_conf_res
+
+          - name: update "/etc/hosts" by adding entry for ENI immediatly after the line for localhost
+            lineinfile:
+                dest: /etc/hosts
+                line: '{{ eni_res.network_interfaces[0].private_ip_address }} {{ eni_res.network_interfaces[0].private_dns_name }}'
+                insertafter: '^127.0.0.1'
+            register: update_hosts_res
+
+          - debug: var=update_hosts_res
+
+          - name: turn off core dumps
+            when: update_hosts_res is success
+            lineinfile:
+              dest: /etc/default/apport
+              regexp: '^enabled=1'
+              line: 'enabled=0'
+              state: present
+            register: core_dumps_off
+
+          - name: backup existing mongod.conf
+            when: core_dumps_off is success
+            shell: mv /etc/mongod.conf /etc/mongod.conf.old
+            register: conf_backup_res
+
+          - debug: var=conf_backup_res
+
+          - name: copy mongod-repl to /etc/mongod.conf
+            when: conf_backup_res is success
+            shell: mv ../mongod-repl.conf /etc/mongod.conf
+            register: new_conf_res
+
+          - debug: var=new_conf_res
+
+          - name: get ansible_fqdn value
+            when: new_conf_res is success
+            shell: echo {{ ansible_fqdn }}
+            register: fqdn_res
+
+          - debug: var=fqdn_res
+
+          - name: copy hugepages fix to /etc/systemd/system/mongod-hugepage-fix.service
+            when: fqdn_res is success
+            shell: mv ../hugepages-fix /etc/systemd/system/mongod-hugepage-fix.service
+            register: hugepages_res
+
+          - debug: var=hugepages_res
+
+          - name: enable hugepages fix
+            when: hugepages_res is success
+            shell: "{{item}}"
+            with_items:
+                - systemctl daemon-reload
+                - systemctl enable mongod-hugepage-fix
+                - systemctl start mongod-hugepage-fix
+            register: hupages_activated_res
+
+          - name: create the /srv/mongod dir
+            when: hupages_activated_res is success
+            file:
+              path: /srv/mongod
+              state: directory
+              mode: 0755
+            register: keyfile_dir_res
+
+          - name: copy shared replicaset-keyfile to /srv/mongod/
+            when: keyfile_dir_res is success
+            shell: mv ../replicaset-keyfile /srv/mongod/replicaset-keyfile
+            register: keyfile_copy_res
+
+          - name: change permissions for /srv/mongod/replicaset-keyfile
+            when: keyfile_copy_res is success
+            shell: chmod 400 /srv/mongod/replicaset-keyfile
+            register: keyfile_chmod_res
+
+          - name: chown /srv/mongod to mongod process
+            when: keyfile_chmod_res is success
+            shell: chown -R mongodb:mongodb /srv/mongod/
+            register: keyfile_chown_res
+
+          - name: check for existing database files on S3
+            when: keyfile_chown_res is success
+            aws_s3:
+                bucket: "{{BACKUP_BUCKET}}"
+                mode: list
+            register: s3_list_res
+
+          - debug: var=s3_list_res
+
+          - name: edit eni netplan config file
+            blockinfile:
+              path: ./eni-netplan-config.yaml
+              block: |
+                network:
+                  version: 2
+                  renderer: networkd
+                  ethernets:
+                    eth1:
+                      match:
+                        macaddress: {{ eni_res.network_interfaces[0].mac_address }}
+                      addresses:
+                       - {{ eni_res.network_interfaces[0].private_ip_address }}/20
+                      set-name: eth1
+                      dhcp4: no
+                      routes:
+                       - to: 0.0.0.0/0
+                         via: {{ ipgateway_res.stdout_lines[0] }}
+                         table: 1000
+                       - to: {{ eni_res.network_interfaces[0].private_ip_address }}
+                         via: 0.0.0.0
+                         scope: link
+                         table: 1000
+                      routing-policy:
+                        - from: {{ eni_res.network_interfaces[0].private_ip_address }}
+                          table: 1000
+            register: netplan_conf_res
+
+          - debug: var=netplan_conf_res
+
+          - name: copy eni netplan config to /etc/netplan dir
+            shell: mv ./eni-netplan-config.yaml /etc/netplan/eni-netplan-config.yaml
+            register: eni_netplan_res
+
+          - debug: var=eni_netplan_res
+
+          - name: apply new netplan
+            shell: 'netplan --debug apply'
+            register: netplan_res
+
+          - debug: var=netplan_res
+
+          - include_tasks: restore.yml
+            when: s3_list_res.s3_keys[0] == "mongo_data.tar.gz"
+            ignore_errors: True
+
+          - name: restart mongod daemon
+            when: keyfile_chown_res is success
+            service:
+              name: mongod
+              state: restarted
+              enabled: yes
+            register: mongod_up_res
+
+          - debug: var=mongod_up_res
+
+          - name: create 10 min cron job for backups of /data to S3
+            when: mongod_up_res is success
+            cron:
+                name: 'data_backup'
+                minute: '*/10'
+                job: '/bin/bash /home/ubuntu/playbooks/pbooks/ubuntu/eni/ubuntu-backup.sh {{ EMAIL_SENDER }} {{BACKUP_BUCKET}}'
+                state: present
+            register: cron_res
+
+          - debug: var=cron_res
+
+          - name: restart cron daemon
+            when: cron_res is success
+            service:
+              name: cron
+              state: restarted
+              enabled: yes
+            register: crontab_res
+
+          - debug: var=crontab_res
+
+          - name: send notification email
+            shell: node ./notifier/hidden.js {{ fqdn_res.stdout }} {{ eni_res.network_interfaces[0].private_dns_name }} {{ EMAIL_SENDER }} {{ eni_res.network_interfaces[0].private_ip_address }}
+            register: email_res
+
+          - debug: var=email_res
