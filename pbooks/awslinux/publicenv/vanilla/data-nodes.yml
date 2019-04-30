@@ -147,7 +147,6 @@
           - debug: var=pub_ip
 
           - name: edit limits.conf file
-            when: priv_ip_res is success
             blockinfile:
               path: /etc/security/limits.conf
               block: |
