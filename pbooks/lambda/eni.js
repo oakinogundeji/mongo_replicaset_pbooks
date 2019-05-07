@@ -48,8 +48,13 @@ exports.default = async (event, context, cbk) => {
   console.log(`targetAZ: ${targetAZ}, targetSubnet: ${targetSubnet}`);
 
   // ensure the right ENI is selected
-
-  const gotMatch = enis["NetworkInterfaces"].filter(eni => eni.AvailabilityZone == targetAZ && eni.SubnetId == targetSubnet);
+  let gotMatch;
+  if(enis["NetworkInterfaces"].length === 1) {
+    gotMatch = enis["NetworkInterfaces"][0];
+  }
+  else {
+    gotMatch = enis["NetworkInterfaces"].filter(eni => eni.AvailabilityZone == targetAZ && eni.SubnetId == targetSubnet);
+  }
   if(!!gotMatch && gotMatch[0]["Description"].includes('transitfare')) {
     console.log('gotMatch');
     console.log(gotMatch);
