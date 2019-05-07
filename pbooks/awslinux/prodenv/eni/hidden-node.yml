@@ -160,7 +160,8 @@
             lineinfile:
                 dest: ../mongod-repl.conf
                 regexp: '^\s{1,}bindIp'
-                line: '  bindIp: 127.0.0.1,{{ eni_res.network_interfaces[0].private_dns_name }}'
+                #line: '  bindIp: 127.0.0.1,{{ eni_res.network_interfaces[0].private_dns_name }}'
+                line: '  bindIp: 127.0.0.1,{{ eni_res.network_interfaces[0].private_ip_address }}'
                 state: present
             register: priv_ip_res
 
@@ -189,16 +190,11 @@
                 * hard nproc 32000
             register: nproc_conf_res
 
-          - name: get hostname
-            shell: hostname
-            register: hostname_res
-
-          - debug: var=hostname_res
-
           - name: update "/etc/hosts" by adding entry for ENI immediatly after the line for localhost
             lineinfile:
                 dest: /etc/hosts
-                line: '{{ eni_res.network_interfaces[0].private_ip_address }} {{ eni_res.network_interfaces[0].private_dns_name }}'
+                #line: '{{ eni_res.network_interfaces[0].private_ip_address }} {{ eni_res.network_interfaces[0].private_dns_name }}'
+                line: '{{ eni_res.network_interfaces[0].private_ip_address }}'
                 insertafter: '^127.0.0.1'
             register: update_hosts_res
 
