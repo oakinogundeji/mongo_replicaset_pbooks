@@ -50,7 +50,7 @@ exports.default = async (event, context, cbk) => {
   // ensure the right ENI is selected
   let gotMatch;
   if(enis["NetworkInterfaces"].length === 1) {
-    gotMatch = enis["NetworkInterfaces"][0];
+    gotMatch = [enis["NetworkInterfaces"][0]];
   }
   else {
     gotMatch = enis["NetworkInterfaces"].filter(eni => eni.AvailabilityZone == targetAZ && eni.SubnetId == targetSubnet);
