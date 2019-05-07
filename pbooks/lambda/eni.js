@@ -50,7 +50,7 @@ exports.default = async (event, context, cbk) => {
   // ensure the right ENI is selected
 
   const gotMatch = enis["NetworkInterfaces"].filter(eni => eni.AvailabilityZone == targetAZ && eni.SubnetId == targetSubnet);
-  if(!!gotMatch && (gotMatch[0]["Description"].includes('data-node') || gotMatch[0]["Description"].includes('hidden-node'))) {
+  if(!!gotMatch && gotMatch[0]["Description"].toLowercase().includes('transitfare')) {
     console.log('gotMatch');
     console.log(gotMatch);
 
