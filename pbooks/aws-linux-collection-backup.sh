@@ -26,4 +26,4 @@ done
 # remove temp file
 rm $tmp_file
 # trigger email notification on successful backup
-/usr/bin/node /home/ec2-user/playbooks/pbooks/awslinux/notifier/collection-backup-notifier.js ${4}
+/usr/bin/node /home/ec2-user/playbooks/pbooks/awslinux/prodenv/notifier/collection-backup-notifier.js ${4}
