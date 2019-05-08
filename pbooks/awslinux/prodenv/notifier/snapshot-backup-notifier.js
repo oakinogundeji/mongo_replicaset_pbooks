@@ -26,7 +26,7 @@ const msg = {
     to: 'oakinogundeji@gmail.com',
     from: emailSender,
     subject: 'Data backup status',
-    text: `Mongodb data has been successfully backed up to S3!`,
+    text: `Mongodb snapshot data has been successfully backed up to S3!`,
     html: `<p>Mongodb data has been successfully backed up to S3!</p>`
 };
 //=============================================================================

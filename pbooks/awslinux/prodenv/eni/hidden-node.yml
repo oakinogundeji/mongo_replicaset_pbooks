@@ -245,7 +245,7 @@
           - name: check for existing database files on S3
             when: keyfile_chown_res is success
             aws_s3:
-                bucket: "{{BACKUP_BUCKET}}"
+                bucket: "{{SNAPSHOT_BACKUP_BUCKET}}"
                 mode: list
             register: s3_list_res
 
@@ -255,11 +255,21 @@
             when: s3_list_res.s3_keys[0] == "mongo_data.tar.gz"
             ignore_errors: True
 
-          - name: create 15 min cron job for backups of /data to S3
+          - name: create 25 min cron job for filesystem snapshot backups of /data to S3
             cron:
-                name: 'data_backup'
-                minute: '*/15'
-                job: '/bin/bash /home/ec2-user/playbooks/pbooks/aws-linux-backup.sh {{ EMAIL_SENDER }} {{BACKUP_BUCKET}}'
+                name: 'snapshot_data_backup'
+                minute: '*/25'
+                job: '/bin/bash /home/ec2-user/playbooks/pbooks/aws-linux-snapshot-backup {{ EMAIL_SENDER }} {{ SNAPSHOT_BACKUP_BUCKET }}'
+                state: present
+            register: cron_res
+
+          - debug: var=cron_res
+
+          - name: create 30 min cron job for collection backups of /data to S3
+            cron:
+                name: 'collection_data_backup'
+                minute: '*/30'
+                job: '/bin/bash /home/ec2-user/playbooks/pbooks/aws-linux-collection-backup.sh {{ DB }} {{ EMAIL_SENDER }} {{ COLLECTION_BACKUP_BUCKET }}'
                 state: present
             register: cron_res
 
