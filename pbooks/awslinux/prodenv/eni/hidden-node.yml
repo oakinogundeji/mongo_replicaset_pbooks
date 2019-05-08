@@ -269,7 +269,7 @@
             cron:
                 name: 'collection_data_backup'
                 minute: '*/30'
-                job: '/bin/bash /home/ec2-user/playbooks/pbooks/aws-linux-collection-backup.sh {{ DB }} {{ EMAIL_SENDER }} {{ COLLECTION_BACKUP_BUCKET }}'
+                job: '/bin/bash /home/ec2-user/playbooks/pbooks/aws-linux-collection-backup.sh {{ DB }} {{ DB_USER }} {{ DB_PWD}} {{ EMAIL_SENDER }} {{ COLLECTION_BACKUP_BUCKET }}'
                 state: present
             register: cron_res
 
