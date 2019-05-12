@@ -241,11 +241,21 @@
             when: s3_list_res.s3_keys[0] == "mongo_data.tar.gz"
             ignore_errors: True
 
-          - name: create 15 min cron job for backups of /data to S3
+          - name: create 1 hour cron job for filesystem snapshot backups of /data to S3
             cron:
-                name: 'data_backup'
-                minute: '*/15'
-                job: '/bin/bash /home/ec2-user/playbooks/pbooks/aws-linux-backup.sh {{ EMAIL_SENDER }} {{BACKUP_BUCKET}}'
+                name: 'snapshot_data_backup'
+                hour: '*/1'
+                job: '/bin/bash /home/ec2-user/playbooks/pbooks/aws-linux-snapshot-backup.sh {{ EMAIL_SENDER }} {{ SNAPSHOT_BACKUP_BUCKET }}'
+                state: present
+            register: cron_res
+
+          - debug: var=cron_res
+
+          - name: create 1 hour cron job for collection backups of /data to S3
+            cron:
+                name: 'collection_data_backup'
+                hour: '*/1'
+                job: '/bin/bash /home/ec2-user/playbooks/pbooks/aws-linux-collection-backup.sh {{ DB }} {{ DB_USER }} {{ DB_PWD}} {{ EMAIL_SENDER }} {{ COLLECTION_BACKUP_BUCKET }} {{ HOST }}'
                 state: present
             register: cron_res
 
