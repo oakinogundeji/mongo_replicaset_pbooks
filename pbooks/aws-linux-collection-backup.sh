@@ -17,8 +17,7 @@ echo "print('_ ' + db.getCollectionNames())" > $tmp_file
 cols=`mongo $db $tmp_file | grep '_' | awk '{print $2}' | tr ',' ' '`
 for c in $cols
 do
-    #mongoexport -u ${2} -p ${3} -d $db -c $c -o "$out_dir/${c}.json" --jsonArray
-    mongoexport --host ${6} -u ${2} -p ${3} -d $db -c $c -o "$out_dir/${c}.json" --jsonArray
+    sudo mongoexport --host ${6} -u ${2} -p ${3} -d $db -c $c -o "$out_dir/${c}.json" --jsonArray
 		tar -czvf $out_dir/${c}.json.tar.gz $out_dir/${c}.json
 		rm $out_dir/${c}.json
 		aws s3 cp $out_dir/${c}.json.tar.gz s3://${5}/${c}.json.tar.gz --storage-class 'STANDARD_IA'
