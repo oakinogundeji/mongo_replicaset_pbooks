@@ -259,7 +259,7 @@
             cron:
                 name: 'data_backup'
                 minute: '*/15'
-                job: '/bin/bash /home/ec2-user/playbooks/pbooks/aws-linux-backup.sh {{ EMAIL_SENDER }} {{SNAPSHOT_BACKUP_BUCKET}}'
+                job: '/bin/bash /home/ec2-user/playbooks/pbooks/aws-linux-snapshot-backup.sh {{ EMAIL_SENDER }} {{SNAPSHOT_BACKUP_BUCKET}}'
                 state: present
             register: cron_res
 
