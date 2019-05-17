@@ -251,12 +251,12 @@
 
           - debug: var=cron_res
 
-          - name: create 1 hour cron job for collection backups of /data to S3
+          - name: define cron job for collection backups of /data to S3
             cron:
                 name: 'collection_data_backup'
                 hour: '*/2'
                 job: '/bin/bash /home/ec2-user/playbooks/pbooks/aws-linux-collection-backup.sh {{ DB }} {{ DB_USER }} {{ DB_PWD}} {{ EMAIL_SENDER }} {{ COLLECTION_BACKUP_BUCKET }} {{ HOST }}'
                 state: present
-            register: cron_res
+            register: cron_res_2
 
-          - debug: var=cron_res
+          - debug: var=cron_res_2
