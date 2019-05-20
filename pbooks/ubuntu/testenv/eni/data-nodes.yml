@@ -16,14 +16,14 @@
 
           - name: create LVM volume group
             when: pvdisplay_res.stdout == ""
-            shell: pvcreate /dev/nvme1n1
+            shell: pvcreate /dev/xvdb
             register: pvcreate_res
 
           - debug: var=pvcreate_res
 
           - name: create LVM volume group
             when: pvcreate_res is success
-            shell: vgcreate mongo_data /dev/nvme1n1
+            shell: vgcreate mongo_data /dev/xvdb
             register: vgcreate_res
 
           - debug: var=vgcreate_res
