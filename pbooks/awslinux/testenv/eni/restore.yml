@@ -51,6 +51,6 @@
       with_items:
           - /home/ec2-user/data_backup
           - /home/ec2-user/s3_obj.tar.gz
-      register: deleted_untar_res
+      register: deleted_untar_resp
 
-    - debug: var=deleted_untar_res
+    - debug: var=deleted_untar_resp
