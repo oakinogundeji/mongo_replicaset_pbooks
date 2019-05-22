@@ -236,7 +236,7 @@
           - name: check for existing database files on S3
             when: keyfile_chown_res is success
             aws_s3:
-                bucket: "{{BACKUP_BUCKET}}"
+                bucket: "{{SNAPSHOT_BACKUP_BUCKET}}"
                 mode: list
             register: s3_list_res
 
@@ -250,7 +250,7 @@
             cron:
                 name: 'data_backup'
                 minute: '*/15'
-                job: '/bin/bash /home/ec2-user/playbooks/pbooks/aws-linux-backup.sh {{ EMAIL_SENDER }} {{BACKUP_BUCKET}}'
+                job: '/bin/bash /home/ec2-user/playbooks/pbooks/aws-linux-backup.sh {{ EMAIL_SENDER }} {{SNAPSHOT_BACKUP_BUCKET}}'
                 state: present
             register: cron_res
 

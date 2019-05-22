@@ -245,7 +245,7 @@
           - name: check for existing database files on S3
             when: keyfile_chown_res is success
             aws_s3:
-                bucket: "{{BACKUP_BUCKET}}"
+                bucket: "{{SNAPSHOT_BACKUP_BUCKET}}"
                 mode: list
             register: s3_list_res
 
