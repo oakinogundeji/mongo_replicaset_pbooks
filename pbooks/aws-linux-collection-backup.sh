@@ -18,10 +18,10 @@ cols=`mongo $db $tmp_file | grep '_' | awk '{print $2}' | tr ',' ' '`
 for c in $cols
 do
     sudo mongoexport --host ${6} -u ${2} -p ${3} -d $db -c $c -o "$out_dir/${c}.json" --jsonArray
-		tar -czvf $out_dir/${c}.json.tar.gz $out_dir/${c}.json
-		rm $out_dir/${c}.json
-		aws s3 cp $out_dir/${c}.json.tar.gz s3://${5}/${c}.json.tar.gz --storage-class 'STANDARD_IA'
-		rm $out_dir/${c}.json.tar.gz
+    tar -czvf $out_dir/${c}.json.tar.gz $out_dir/${c}.json
+    rm $out_dir/${c}.json
+    aws s3 cp $out_dir/${c}.json.tar.gz s3://${5}/${c}.json.tar.gz --storage-class 'STANDARD_IA'
+    rm $out_dir/${c}.json.tar.gz
 done
 # remove temp file
 rm $tmp_file
