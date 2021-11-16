@@ -17,7 +17,7 @@
   },
   "homepage": "https://github.com/oakinogundeji/eni_lambda#readme",
   "dependencies": {
-    "aws-sdk": "^2.440.0",
+    "aws-sdk": "^2.814.0",
     "bluebird": "^3.5.4",
     "serverless": "^1.42.3"
   },
